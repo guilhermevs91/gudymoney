@@ -1138,7 +1138,7 @@ export const importsService = {
               date: txn.date,
               amount: txn.amount_brl,
               description,
-              status: itemAction === 'duplicate' ? 'IGNORED' : 'MATCHED',
+              status: (itemAction as string) === 'duplicate' ? 'IGNORED' : 'MATCHED',
               raw_data: { card: section.last_four, action: itemAction },
             });
           }
