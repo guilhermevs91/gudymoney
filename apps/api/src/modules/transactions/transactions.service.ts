@@ -13,7 +13,6 @@ import {
 import { transactionsRepository } from './transactions.repository';
 import {
   creditCardsRepository,
-  calculateInvoicePeriod,
 } from '../credit-cards/credit-cards.repository';
 import type {
   LedgerEntryCreateInput,
@@ -268,7 +267,7 @@ export const transactionsService = {
       principalCardId = card.parent_card_id ?? card.id;
     }
 
-    let createdTransaction: TransactionWithRelations;
+    // createdTransaction fetched after DB transaction commits
     let createdId: string;
 
     await prisma.$transaction(async (tx) => {
@@ -384,9 +383,8 @@ export const transactionsService = {
     if (withRelations === null) {
       throw new Error('Failed to fetch created transaction.');
     }
-    createdTransaction = withRelations;
 
-    return createdTransaction;
+    return withRelations;
   },
 
   /**

@@ -1,13 +1,11 @@
 import request from 'supertest';
 import app from '../app';
-import { prisma } from '../lib/prisma';
 
 describe('Auth', () => {
   const email = `test_auth_${Date.now()}@example.com`;
   const password = 'TestPass123!';
   const name = 'Test User Auth';
 
-  let accessToken: string;
   let refreshToken: string;
 
   describe('POST /auth/register', () => {
@@ -21,7 +19,6 @@ describe('Auth', () => {
         refresh_token: expect.any(String),
       });
 
-      accessToken = res.body.data.access_token as string;
       refreshToken = res.body.data.refresh_token as string;
     });
 

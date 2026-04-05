@@ -12,7 +12,7 @@ import { importsRepository } from './imports.repository';
 import { parseOFX } from './parsers/ofx.parser';
 import { parseCSV, getPresetMapping } from './parsers/csv.parser';
 import { parseBradescoInvoice, decodeInvoiceBuffer } from './parsers/bradesco-invoice.parser';
-import { creditCardsRepository, calculateInvoicePeriod } from '../credit-cards/credit-cards.repository';
+import { creditCardsRepository } from '../credit-cards/credit-cards.repository';
 import { findCategoryRule } from '../transactions/transactions.service';
 import type { ParsedTransaction } from './parsers/ofx.parser';
 import type { UploadImportInput, BradescoCardMapping } from './imports.schemas';

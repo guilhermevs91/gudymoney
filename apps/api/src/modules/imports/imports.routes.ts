@@ -8,7 +8,6 @@ import {
   reconcileSchema,
   listImportItemsQuerySchema,
   listImportsQuerySchema,
-  bradescoImportSchema,
 } from './imports.schemas';
 
 const router: Router = Router();
