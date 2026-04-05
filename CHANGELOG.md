@@ -5,6 +5,11 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.3.2] - 2026-04-05
+
+### Corrigido
+- Dashboard: removido scroll horizontal no card de Orçamento (`overflow-x-hidden` no container interno)
+
 ## [1.3.1] - 2026-04-05
 
 ### Alterado

@@ -205,7 +205,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Budget progress */}
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 overflow-hidden">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Orçamento — {formatMonth(nav.year, nav.month)}</CardTitle>
@@ -218,7 +218,7 @@ export default function DashboardPage() {
             {budgetItems.length === 0 ? (
               <p className="text-sm text-muted-foreground px-6 pb-4">Sem orçamento para este mês.</p>
             ) : (
-              <div className="overflow-y-auto max-h-[300px] px-4 md:px-6 pb-4 space-y-0 scrollbar-thin">
+              <div className="overflow-y-auto overflow-x-hidden max-h-[300px] px-4 md:px-6 pb-4 space-y-0 scrollbar-thin">
                 {[...budgetItems]
                   .sort((a, b) => Number(b.planned_amount) - Number(a.planned_amount))
                   .map((item) => {
@@ -234,26 +234,18 @@ export default function DashboardPage() {
 
                     return (
                       <div key={item.id} className="py-2.5 border-b last:border-b-0">
-                        {/* Mobile: stacked layout */}
-                        <div className="flex items-center justify-between mb-1.5 gap-2">
-                          <span className="flex items-center gap-1.5 text-sm font-medium truncate">
+                        <div className="flex items-center justify-between mb-1.5 gap-2 min-w-0">
+                          <span className="flex items-center gap-1.5 text-sm font-medium min-w-0 truncate">
                             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
-                            {item.category?.name ?? 'Categoria'}
+                            <span className="truncate">{item.category?.name ?? 'Categoria'}</span>
                           </span>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className={`text-xs font-semibold tabular-nums ${pct >= 100 && !isIncome ? 'text-red-500' : pct >= 100 && isIncome ? 'text-green-500' : 'text-muted-foreground'}`}>
-                              {formatCurrency(actual)}
-                            </span>
-                            <span className="text-xs text-muted-foreground/50">/</span>
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {formatCurrency(planned)}
-                            </span>
-                            <span className={`text-[10px] font-bold w-8 text-right tabular-nums ${pct >= 100 ? (isIncome ? 'text-green-500' : 'text-red-500') : 'text-muted-foreground'}`}>
+                          <div className="flex items-center gap-1 shrink-0 text-[11px] tabular-nums">
+                            <span className={`font-bold w-8 text-right ${pct >= 100 ? (isIncome ? 'text-green-500' : 'text-red-500') : 'text-muted-foreground'}`}>
                               {Math.round(pct)}%
                             </span>
                           </div>
                         </div>
-                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden w-full">
                           <div
                             className="h-full rounded-full transition-all"
                             style={{ width: `${displayPct}%`, backgroundColor: barBg }}
