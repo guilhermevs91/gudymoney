@@ -200,7 +200,6 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     loadTransactions(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, loadTransactions]);
 
   function handleFilterChange(key: keyof Filters, value: string) {

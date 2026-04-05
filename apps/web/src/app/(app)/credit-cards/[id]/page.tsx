@@ -356,7 +356,7 @@ export default function CreditCardDetailPage() {
     setEditDate(t.date.split('T')[0]!);
     setEditCategoryId(t.category?.id ?? '');
     setEditStatus(t.status);
-    setEditNotes((t as any).notes ?? '');
+    setEditNotes(t.notes ?? '');
     setEditDialog(true);
   }
 

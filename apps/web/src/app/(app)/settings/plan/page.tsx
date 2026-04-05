@@ -57,7 +57,7 @@ export default function PlanPage() {
   const [subscribing, setSubscribing] = useState(false)
 
   const [cancelOpen, setCancelOpen] = useState(false)
-  const [canceling, setCanceling] = useState(false)
+  const [_canceling, setCanceling] = useState(false)
 
   async function loadData() {
     setLoading(true)

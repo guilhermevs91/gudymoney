@@ -145,8 +145,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   // Close drawer on route change
   useEffect(() => {
     onMobileClose();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [pathname, onMobileClose]);
 
   return (
     <>
