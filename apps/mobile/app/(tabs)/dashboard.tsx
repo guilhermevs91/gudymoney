@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
-import type { LedgerSummary, Account } from './types';
 
 interface LedgerSummary {
   total_realized: number;

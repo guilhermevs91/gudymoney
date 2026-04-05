@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (token) {
         try {
           const payload = JSON.parse(
-            Buffer.from(token.split('.')[1]!, 'base64').toString(),
+            atob(token.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/')),
           );
           setUser({
             userId: payload.userId,
