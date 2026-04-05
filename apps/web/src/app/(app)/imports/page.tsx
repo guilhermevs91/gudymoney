@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { useToast } from '@/components/ui/use-toast'
-import { Import, ImportItem, Account, CreditCard } from '@/types'
+import { Import, ImportItem, Account, CreditCard, Transaction } from '@/types'
 import { Upload, FileText, CreditCard as CreditCardIcon, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
