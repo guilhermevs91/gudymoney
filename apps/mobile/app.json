@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Gudy Money",
+    "slug": "gudy-money",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E11D48"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gudymoney.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Usado para capturar faturas de cartão de crédito.",
+        "NSFaceIDUsageDescription": "Usado para autenticação biométrica."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E11D48"
+      },
+      "package": "com.gudymoney.app",
+      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT", "CAMERA"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Usado para autenticação biométrica no Gudy Money."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Usado para capturar faturas de cartão."
+        }
+      ]
+    ],
+    "scheme": "gudy-money",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

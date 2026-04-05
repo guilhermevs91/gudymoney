@@ -1,0 +1,82 @@
+version: "3.9"
+
+# =============================================================================
+# Gudy Money — Stack para Portainer
+# =============================================================================
+# Como usar:
+#   1. No Portainer: Stacks → Add Stack → Web editor
+#   2. Cole este arquivo
+#   3. Preencha as variáveis de ambiente no painel "Environment variables"
+#
+# Pré-requisitos no servidor:
+#   - Container postgres-app rodando e acessível na rede SERVER_NETWORK
+#   - Nginx externo já configurado apontando para as portas da API e Web
+#   - Imagens gudy-api e gudy-web buildadas e carregadas no servidor (ver DEPLOY.md)
+# =============================================================================
+
+networks:
+  # Rede interna entre api e web
+  gudy_net:
+    driver: bridge
+  # Rede externa onde está o postgres-app (e o nginx externo, se necessário)
+  server_net:
+    external: true
+    name: ${SERVER_NETWORK:-server_default}
+
+services:
+  # ---------------------------------------------------------------------------
+  # API — Node.js + Express + Prisma
+  # ---------------------------------------------------------------------------
+  api:
+    image: ghcr.io/guilhermevs91/gudy-api:latest
+    container_name: gudy_api
+    restart: unless-stopped
+    networks:
+      - gudy_net
+      - server_net   # acesso ao postgres-app e ao nginx externo
+    ports:
+      - "${API_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: production
+      TZ: America/Sao_Paulo
+      PORT: "3001"
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT:-5432}/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      SUPERADMIN_JWT_SECRET: ${SUPERADMIN_JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://sandbox.asaas.com/api/v3}
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # Web — Next.js standalone
+  # ---------------------------------------------------------------------------
+  web:
+    image: ghcr.io/guilhermevs91/gudy-web:latest
+    container_name: gudy_web
+    restart: unless-stopped
+    networks:
+      - gudy_net
+      - server_net   # acesso ao nginx externo
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL}
+    deploy:
+      resources:
+        limits:
+          memory: 256m

@@ -1,0 +1,966 @@
+// =============================================================================
+// Gudy Money — Prisma Schema
+// Database: PostgreSQL
+// Conventions:
+//   - id: UUID v4 (String)
+//   - tenant_id: present on ALL tables except tenants, users, superadmin_users
+//   - Soft delete only via deleted_at (never hard delete)
+//   - timestamptz via DateTime (Prisma always maps to timestamptz in PostgreSQL)
+//   - Decimal(15,2) for all monetary values
+// =============================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum PlanType {
+  FREE
+  PAID
+  DEV
+}
+
+enum BudgetScope {
+  TENANT
+  USER
+}
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  WALLET
+  INTERNAL
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PREVISTO
+  REALIZADO
+  CANCELADO
+}
+
+enum InvoiceStatus {
+  OPEN
+  CLOSED
+  PAID
+  PARTIAL
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum LedgerEntryType {
+  DEBIT
+  CREDIT
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+  BOTH
+}
+
+enum ImportFormat {
+  OFX
+  CSV
+  TXT
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ImportItemStatus {
+  PENDING
+  MATCHED
+  IGNORED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+}
+
+enum WebhookEventStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum NotificationType {
+  IMPORT_COMPLETED
+  BUDGET_WARNING
+  BUDGET_EXCEEDED
+  INVOICE_DUE
+  INVITE_ACCEPTED
+}
+
+// =============================================================================
+// LAYER 1 — Foundation
+// =============================================================================
+
+model Tenant {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  name             String
+  slug             String      @unique
+  plan             PlanType    @default(FREE)
+  plan_expires_at  DateTime?
+  budget_scope     BudgetScope @default(TENANT)
+  asaas_customer_id String?
+  blocked_at       DateTime?
+
+  // Relations
+  members          TenantMember[]
+  accounts         Account[]
+  categories       Category[]
+  tags             Tag[]
+  transactions     Transaction[]
+  credit_cards     CreditCard[]
+  budgets          Budget[]
+  imports          Import[]
+  webhooks         Webhook[]
+  invites          Invite[]
+  ledger_entries   LedgerEntry[]
+  installments     Installment[]
+  installment_items InstallmentItem[]
+  recurrences      Recurrence[]
+  transaction_tags TransactionTag[]
+  budget_items     BudgetItem[]
+  budget_versions  BudgetVersion[]
+  import_items     ImportItem[]
+  reconciliations  Reconciliation[]
+  webhook_events   WebhookEvent[]
+  notifications    Notification[]
+  category_rules   CategoryRule[]
+  invoice_payments InvoicePayment[]
+  credit_card_invoices CreditCardInvoice[]
+  audit_logs       AuditLog[]
+
+  @@map("tenants")
+}
+
+model User {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  name          String
+  email         String  @unique
+  password_hash String?
+  google_id     String? @unique
+
+  // Relations
+  tenant_members  TenantMember[]
+  refresh_tokens  RefreshToken[]
+  lgpd_consents   LgpdConsent[]
+
+  @@map("users")
+}
+
+model TenantMember {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id String
+  user_id   String
+  role      MemberRole
+
+  // Relations
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  user   User   @relation(fields: [user_id], references: [id])
+
+  @@unique([tenant_id, user_id])
+  @@index([tenant_id])
+  @@index([user_id])
+  @@map("tenant_members")
+}
+
+model SuperadminUser {
+  id            String    @id @default(uuid())
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+  created_by    String?
+
+  name          String
+  email         String    @unique
+  password_hash String
+  last_login_at DateTime?
+
+  @@map("superadmin_users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  user_id    String
+  token_hash String    @unique
+  expires_at DateTime
+  revoked_at DateTime?
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@map("refresh_tokens")
+}
+
+model Invite {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id   String
+  email       String
+  role        MemberRole
+  token       String     @unique
+  expires_at  DateTime
+  accepted_at DateTime?
+
+  // Relations
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([email])
+  @@map("invites")
+}
+
+// =============================================================================
+// LAYER 2 — Financial Structure
+// =============================================================================
+
+model Account {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id       String
+  name            String
+  type            AccountType
+  initial_balance Decimal     @db.Decimal(15, 2)
+  currency        String      @default("BRL")
+  bank_name       String?
+  color           String?
+  icon            String?
+  is_active       Boolean     @default(true)
+
+  // FK to credit_cards — only populated when type = INTERNAL
+  // This is the "payment account" side of a credit card.
+  // The credit_card side holds internal_account_id pointing back here.
+  credit_card_id  String?
+
+  // Relations
+  tenant               Tenant           @relation(fields: [tenant_id], references: [id])
+  credit_card          CreditCard?      @relation("AccountCreditCard", fields: [credit_card_id], references: [id])
+  internal_credit_card CreditCard?      @relation("InternalAccount")
+  ledger_entries       LedgerEntry[]
+  transactions         Transaction[]
+  invoice_payments     InvoicePayment[]
+  imports              Import[]
+  recurrences          Recurrence[]
+
+  @@index([tenant_id, is_active])
+  @@index([credit_card_id])
+  @@map("accounts")
+}
+
+model CreditCard {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id           String
+  name                String
+  brand               String?
+  last_four           String?
+  limit_total         Decimal  @db.Decimal(15, 2)
+  limit_used          Decimal  @db.Decimal(15, 2) @default(0)
+  limit_available     Decimal  @db.Decimal(15, 2)
+  closing_day         Int
+  due_day             Int
+  internal_account_id String   @unique
+  parent_card_id      String?
+  color               String?
+  is_active           Boolean  @default(true)
+
+  // Relations
+  tenant           Tenant              @relation(fields: [tenant_id], references: [id])
+  internal_account Account             @relation("InternalAccount", fields: [internal_account_id], references: [id])
+  parent_card      CreditCard?         @relation("CardHierarchy", fields: [parent_card_id], references: [id])
+  child_cards      CreditCard[]        @relation("CardHierarchy")
+  invoices         CreditCardInvoice[]
+  transactions     Transaction[]
+  installments     Installment[]
+  recurrences      Recurrence[]
+  accounts         Account[]           @relation("AccountCreditCard")
+  imports          Import[]
+
+  @@index([tenant_id, is_active])
+  @@index([parent_card_id])
+  @@map("credit_cards")
+}
+
+model CreditCardInvoice {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id      String
+  credit_card_id String
+  period_start   DateTime
+  period_end     DateTime
+  due_date       DateTime
+  status         InvoiceStatus
+  total_amount   Decimal       @db.Decimal(15, 2) @default(0)
+  total_paid     Decimal       @db.Decimal(15, 2) @default(0)
+
+  // Relations
+  tenant           Tenant           @relation(fields: [tenant_id], references: [id])
+  credit_card      CreditCard       @relation(fields: [credit_card_id], references: [id])
+  installment_items InstallmentItem[]
+  invoice_payments InvoicePayment[]
+  transactions     Transaction[]
+
+  @@unique([credit_card_id, period_start])
+  @@index([tenant_id, status])
+  @@index([due_date])
+  @@map("credit_card_invoices")
+}
+
+model InvoicePayment {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id  String
+  invoice_id String
+  amount     Decimal  @db.Decimal(15, 2)
+  paid_at    DateTime
+  account_id String
+  notes      String?
+
+  // Relations
+  tenant  Tenant            @relation(fields: [tenant_id], references: [id])
+  invoice CreditCardInvoice @relation(fields: [invoice_id], references: [id])
+  account Account           @relation(fields: [account_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([invoice_id])
+  @@index([account_id])
+  @@map("invoice_payments")
+}
+
+model Category {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id String
+  name      String
+  color     String?
+  icon      String?
+  parent_id String?
+  is_system Boolean      @default(false)
+  type      CategoryType @default(BOTH)
+
+  // Relations
+  tenant          Tenant       @relation(fields: [tenant_id], references: [id])
+  parent_category Category?    @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  subcategories   Category[]   @relation("CategoryHierarchy")
+  transactions    Transaction[]
+  budget_items    BudgetItem[]
+  category_rules  CategoryRule[]
+  recurrences     Recurrence[]
+
+  @@unique([tenant_id, name, parent_id])
+  @@index([tenant_id, is_system])
+  @@index([parent_id])
+  @@map("categories")
+}
+
+model Tag {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id String
+  name      String
+  color     String?
+
+  // Relations
+  tenant           Tenant           @relation(fields: [tenant_id], references: [id])
+  transaction_tags TransactionTag[]
+
+  @@unique([tenant_id, name])
+  @@index([tenant_id])
+  @@map("tags")
+}
+
+// =============================================================================
+// LAYER 3 — Transactions (Core)
+// =============================================================================
+
+model Transaction {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id               String
+  type                    TransactionType
+  status                  TransactionStatus
+  amount                  Decimal           @db.Decimal(15, 2)
+  description             String
+  date                    DateTime
+  category_id             String?
+  account_id              String?
+  credit_card_id          String?
+  credit_card_invoice_id  String?
+  recurrence_id           String?
+  recurrence_index        Int?
+  installment_id          String?
+  external_id             String?
+  notes                   String?
+  pix_key                 String?
+  is_reconciled           Boolean           @default(false)
+  reconciliation_id       String?
+  user_id                 String?
+  import_id               String?
+
+  // Relations
+  tenant           Tenant             @relation(fields: [tenant_id], references: [id])
+  category         Category?          @relation(fields: [category_id], references: [id])
+  account          Account?           @relation(fields: [account_id], references: [id])
+  credit_card      CreditCard?        @relation(fields: [credit_card_id], references: [id])
+  invoice          CreditCardInvoice? @relation(fields: [credit_card_invoice_id], references: [id])
+  recurrence         Recurrence?        @relation(fields: [recurrence_id], references: [id])
+  installment        Installment?       @relation("TransactionToInstallment", fields: [installment_id], references: [id])
+  child_installment  Installment?       @relation("InstallmentParent")
+  reconciliation     Reconciliation?    @relation("ReconciliationTransaction")
+  transaction_tags TransactionTag[]
+  ledger_entries   LedgerEntry[]
+  installment_item InstallmentItem?   @relation("InstallmentItemTransaction")
+  import           Import?            @relation(fields: [import_id], references: [id])
+
+  @@index([tenant_id, date, deleted_at])
+  @@index([tenant_id, category_id, deleted_at])
+  @@index([tenant_id, status, deleted_at])
+  @@index([account_id, deleted_at])
+  @@index([credit_card_id, deleted_at])
+  @@index([recurrence_id])
+  @@index([user_id])
+  @@index([import_id])
+  @@map("transactions")
+}
+
+model Installment {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id             String
+  parent_transaction_id String  @unique
+  total_amount          Decimal @db.Decimal(15, 2)
+  total_installments    Int
+  credit_card_id        String
+  description           String
+
+  // Relations
+  tenant             Tenant            @relation(fields: [tenant_id], references: [id])
+  parent_transaction Transaction       @relation("InstallmentParent", fields: [parent_transaction_id], references: [id])
+  credit_card        CreditCard        @relation(fields: [credit_card_id], references: [id])
+  transactions       Transaction[]     @relation("TransactionToInstallment")
+  installment_items  InstallmentItem[]
+
+  @@index([tenant_id])
+  @@index([parent_transaction_id])
+  @@index([credit_card_id])
+  @@map("installments")
+}
+
+model InstallmentItem {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id               String
+  installment_id          String
+  transaction_id          String  @unique
+  credit_card_invoice_id  String
+  installment_number      Int
+  amount                  Decimal @db.Decimal(15, 2)
+
+  // Relations
+  tenant      Tenant            @relation(fields: [tenant_id], references: [id])
+  installment Installment       @relation(fields: [installment_id], references: [id])
+  transaction Transaction       @relation("InstallmentItemTransaction", fields: [transaction_id], references: [id])
+  invoice     CreditCardInvoice @relation(fields: [credit_card_invoice_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([installment_id])
+  @@index([credit_card_invoice_id])
+  @@map("installment_items")
+}
+
+model Recurrence {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id                String
+  description              String
+  amount                   Decimal             @db.Decimal(15, 2)
+  type                     TransactionType
+  frequency                RecurrenceFrequency
+  start_date               DateTime
+  end_date                 DateTime?
+  horizon_generated_until  DateTime
+  category_id              String?
+  account_id               String?
+  credit_card_id           String?
+  is_active                Boolean             @default(true)
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenant_id], references: [id])
+  category     Category?     @relation(fields: [category_id], references: [id])
+  account      Account?      @relation(fields: [account_id], references: [id])
+  credit_card  CreditCard?   @relation(fields: [credit_card_id], references: [id])
+  transactions Transaction[]
+
+  @@index([tenant_id, is_active, horizon_generated_until])
+  @@index([account_id])
+  @@index([credit_card_id])
+  @@map("recurrences")
+}
+
+model LedgerEntry {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id      String
+  account_id     String
+  transaction_id String
+  type           LedgerEntryType
+  amount         Decimal          @db.Decimal(15, 2)
+  status         TransactionStatus
+
+  // Relations
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  account     Account     @relation(fields: [account_id], references: [id])
+  transaction Transaction @relation(fields: [transaction_id], references: [id])
+
+  // CRITICAL: composite index drives all balance calculation queries
+  @@index([account_id, status, deleted_at])
+  @@index([tenant_id])
+  @@index([transaction_id])
+  @@map("ledger_entries")
+}
+
+model TransactionTag {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id      String
+  transaction_id String
+  tag_id         String
+
+  // Relations
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  transaction Transaction @relation(fields: [transaction_id], references: [id])
+  tag         Tag         @relation(fields: [tag_id], references: [id])
+
+  @@unique([transaction_id, tag_id])
+  @@index([tenant_id])
+  @@index([tag_id])
+  @@map("transaction_tags")
+}
+
+// =============================================================================
+// LAYER 4 — Planning
+// =============================================================================
+
+model Budget {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id String
+  year      Int
+  month     Int
+  scope     BudgetScope
+  user_id   String?
+  version   Int         @default(1)
+
+  // Relations
+  tenant          Tenant          @relation(fields: [tenant_id], references: [id])
+  budget_items    BudgetItem[]
+  budget_versions BudgetVersion[]
+
+  @@unique([tenant_id, year, month, user_id])
+  @@index([tenant_id, year, month])
+  @@map("budgets")
+}
+
+model BudgetItem {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id        String
+  budget_id        String
+  category_id      String
+  type             TransactionType @default(EXPENSE)
+  planned_amount   Decimal @db.Decimal(15, 2)
+  rollover_enabled Boolean @default(false)
+  rollover_amount  Decimal @db.Decimal(15, 2) @default(0)
+
+  // Relations
+  tenant   Tenant   @relation(fields: [tenant_id], references: [id])
+  budget   Budget   @relation(fields: [budget_id], references: [id])
+  category Category @relation(fields: [category_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([budget_id])
+  @@index([category_id])
+  @@map("budget_items")
+}
+
+model BudgetVersion {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id String
+  budget_id String
+  version   Int
+  snapshot  Json
+
+  // Relations
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  budget Budget @relation(fields: [budget_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([budget_id, version])
+  @@map("budget_versions")
+}
+
+// =============================================================================
+// LAYER 5 — Import & Reconciliation
+// =============================================================================
+
+model Import {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id      String
+  account_id     String?
+  credit_card_id String?
+  format         ImportFormat
+  status         ImportStatus @default(PENDING)
+  filename       String
+  total_rows     Int          @default(0)
+  processed_rows Int          @default(0)
+  matched_rows   Int          @default(0)
+  error_message  String?
+
+  // Relations
+  tenant       Tenant        @relation(fields: [tenant_id], references: [id])
+  account      Account?      @relation(fields: [account_id], references: [id])
+  credit_card  CreditCard?   @relation(fields: [credit_card_id], references: [id])
+  import_items ImportItem[]
+  transactions Transaction[]
+
+  @@index([tenant_id, status])
+  @@index([account_id])
+  @@index([credit_card_id])
+  @@map("imports")
+}
+
+model ImportItem {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id   String
+  import_id   String
+  raw_data    Json
+  date        DateTime
+  amount      Decimal          @db.Decimal(15, 2)
+  description String
+  external_id String?
+  status      ImportItemStatus @default(PENDING)
+
+  // Relations
+  tenant          Tenant          @relation(fields: [tenant_id], references: [id])
+  import          Import          @relation(fields: [import_id], references: [id])
+  reconciliation  Reconciliation? @relation("ReconciliationImportItem")
+
+  @@index([tenant_id, status])
+  @@index([import_id])
+  @@map("import_items")
+}
+
+model Reconciliation {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id      String
+  import_item_id String   @unique
+  transaction_id String   @unique
+  score          Float
+  matched_at     DateTime @default(now())
+  matched_by     String
+
+  // Relations
+  tenant      Tenant      @relation(fields: [tenant_id], references: [id])
+  import_item ImportItem  @relation("ReconciliationImportItem", fields: [import_item_id], references: [id])
+  transaction Transaction @relation("ReconciliationTransaction", fields: [transaction_id], references: [id])
+
+  @@index([tenant_id])
+  @@map("reconciliations")
+}
+
+// =============================================================================
+// LAYER 6 — Infrastructure
+// =============================================================================
+
+model AuditLog {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  // tenant_id is nullable: SuperAdmin actions have no tenant context
+  tenant_id   String?
+  user_id     String?
+  entity_type String
+  entity_id   String
+  action      AuditAction
+  before_data Json?
+  after_data  Json?
+  ip_address  String?
+  user_agent  String?
+
+  // Relations
+  tenant Tenant? @relation(fields: [tenant_id], references: [id])
+
+  @@index([entity_type, entity_id])
+  @@index([tenant_id, created_at])
+  @@index([user_id, created_at])
+  @@map("audit_logs")
+}
+
+model Webhook {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id String
+  url       String
+  secret    String
+  events    String[]
+  is_active Boolean  @default(true)
+
+  // Relations
+  tenant         Tenant         @relation(fields: [tenant_id], references: [id])
+  webhook_events WebhookEvent[]
+
+  @@index([tenant_id, is_active])
+  @@map("webhooks")
+}
+
+model WebhookEvent {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id            String
+  webhook_id           String
+  event_type           String
+  payload              Json
+  status               WebhookEventStatus @default(PENDING)
+  attempts             Int                @default(0)
+  last_attempt_at      DateTime?
+  response_status_code Int?
+  next_retry_at        DateTime?
+
+  // Relations
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id])
+  webhook Webhook @relation(fields: [webhook_id], references: [id])
+
+  // Supports cron retry job: "give me all PENDING/FAILED events due for retry"
+  @@index([status, next_retry_at])
+  @@index([tenant_id])
+  @@index([webhook_id])
+  @@map("webhook_events")
+}
+
+model PlanFeature {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  plan          PlanType
+  feature_key   String
+  feature_value String
+
+  @@unique([plan, feature_key])
+  @@map("plan_features")
+}
+
+model LgpdConsent {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  // tenant_id is nullable: consent can be recorded before tenant assignment
+  tenant_id      String?
+  user_id        String
+  purpose        String
+  policy_version String
+  ip_address     String?
+  granted_at     DateTime  @default(now())
+  revoked_at     DateTime?
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([tenant_id])
+  @@map("lgpd_consents")
+}
+
+model CategoryRule {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  tenant_id   String
+  pattern     String   // normalized description base (without installment suffix)
+  category_id String
+
+  // Relations
+  tenant   Tenant   @relation(fields: [tenant_id], references: [id])
+  category Category @relation(fields: [category_id], references: [id])
+
+  @@unique([tenant_id, pattern])
+  @@index([tenant_id])
+  @@map("category_rules")
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  created_by String?
+
+  tenant_id String
+  user_id   String
+  type      NotificationType
+  title     String
+  body      String
+  read_at   DateTime?
+  metadata  Json?
+
+  // Relations
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([user_id, read_at])
+  @@index([tenant_id])
+  @@map("notifications")
+}

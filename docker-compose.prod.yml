@@ -1,0 +1,81 @@
+version: "3.9"
+
+# Production overrides for Gudy Money
+# Usage: docker-compose -f docker-compose.prod.yml up -d --build
+
+networks:
+  gudy_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gudy_postgres
+    # Port intentionally not exposed in production — internal access only
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: gudy_money
+      POSTGRES_USER: gudy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - gudy_network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gudy -d gudy_money"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api:
+    image: gudy-api:latest
+    container_name: gudy_api
+    # No volume mounts in production — image is pre-built
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    networks:
+      - gudy_network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  web:
+    image: gudy-web:latest
+    container_name: gudy_web
+    # No volume mounts in production — image is pre-built
+    depends_on:
+      - api
+    env_file:
+      - .env.prod
+    networks:
+      - gudy_network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  nginx:
+    image: nginx:alpine
+    container_name: gudy_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - gudy_network
+    restart: always

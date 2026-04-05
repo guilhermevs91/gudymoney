@@ -1,0 +1,104 @@
+version: "3.9"
+
+# =============================================================================
+# Gudy Money — Development Docker Compose
+#
+# Opção 1 (recomendado para dev): sobe só o postgres
+#   docker-compose up postgres
+#   pnpm dev   (roda API + Web localmente com hot-reload)
+#
+# Opção 2 (stack completa em container):
+#   docker-compose up --build
+# =============================================================================
+
+networks:
+  gudy_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — shared entre dev local e container
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: gudy_postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: gudy_money
+      POSTGRES_USER: gudy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gudy_dev_pass}
+    networks:
+      - gudy_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gudy -d gudy_money"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # API — Node.js + Express (dev: ts-node-dev com hot-reload)
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: builder         # builder stage has deps + compiled output
+    container_name: gudy_api
+    working_dir: /repo/apps/api
+    command: >
+      sh -c "pnpm exec prisma migrate deploy &&
+             pnpm exec ts-node-dev --respawn --transpile-only --exit-child src/index.ts"
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/api/src:/repo/apps/api/src      # hot-reload source
+      - ./apps/api/prisma:/repo/apps/api/prisma
+    environment:
+      DATABASE_URL: postgresql://gudy:${POSTGRES_PASSWORD:-gudy_dev_pass}@postgres:5432/gudy_money
+      JWT_SECRET: ${JWT_SECRET:-gudy_jwt_secret_dev_change_in_production_min32chars}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-gudy_refresh_secret_dev_change_in_production_min32}
+      SUPERADMIN_JWT_SECRET: ${SUPERADMIN_JWT_SECRET:-gudy_superadmin_secret_dev_change_in_production_ok}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_BASE_URL: ${ASAAS_BASE_URL:-https://sandbox.asaas.com/api/v3}
+      WEBHOOK_SIGNING_SECRET: ${WEBHOOK_SIGNING_SECRET:-gudy_webhook_secret_dev}
+      NODE_ENV: development
+      PORT: "3001"
+      TZ: America/Sao_Paulo
+    networks:
+      - gudy_network
+
+  # ---------------------------------------------------------------------------
+  # Web — Next.js (dev mode)
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: builder
+    container_name: gudy_web
+    working_dir: /repo/apps/web
+    command: pnpm dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web/src:/repo/apps/web/src          # hot-reload source
+      - ./apps/web/public:/repo/apps/web/public
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+      NODE_ENV: development
+    networks:
+      - gudy_network
