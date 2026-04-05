@@ -66,9 +66,8 @@ jobs:
     steps:
       - name: Trigger Portainer stack update
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${{ secrets.PORTAINER_URL }}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}/git/redeploy" \
-            -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"pullImage": true}' | grep -qE '^2' || \
-          echo "⚠️  Portainer webhook falhou — atualize a stack manualmente."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.PORTAINER_URL }}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}/images/update" \
+            -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}")
+          echo "Portainer response: $STATUS"
+          echo "$STATUS" | grep -qE '^2' || echo "⚠️  Portainer webhook falhou (status $STATUS) — atualize a stack manualmente."
