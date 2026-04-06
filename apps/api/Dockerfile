@@ -8,7 +8,7 @@ WORKDIR /repo
 RUN npm install -g pnpm@9 --quiet
 
 # -----------------------------------------------------------------------------
-# Stage: deps — install all workspace deps (needs ALL package.json manifests)
+# Stage: deps — install all workspace deps
 # -----------------------------------------------------------------------------
 FROM base AS deps
 
@@ -31,10 +31,7 @@ COPY --from=deps /repo/packages/shared/node_modules  ./packages/shared/node_modu
 
 COPY . .
 
-# Generate Prisma client
 RUN pnpm --filter @gudy/api exec prisma generate
-
-# Compile TypeScript
 RUN pnpm --filter @gudy/api build
 
 # -----------------------------------------------------------------------------
@@ -49,16 +46,15 @@ RUN apk add --no-cache openssl \
  && addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 apiuser
 
-# Copia codigo compilado, deps da app e schema prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
 
-# Instala prisma CLI globalmente (como root, antes de trocar de usuario)
-RUN npm install -g prisma@5.22.0 --ignore-scripts
+# Copia todo o .pnpm para que os symlinks de node_modules funcionem
+COPY --from=builder --chown=apiuser:nodejs /repo/node_modules/.pnpm     ./node_modules/.pnpm
 
 USER apiuser
 EXPOSE 3001
 
-CMD ["sh", "-c", "prisma migrate deploy && node dist/index.js"]
+CMD ["node", "dist/index.js"]
