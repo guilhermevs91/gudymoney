@@ -15,6 +15,7 @@
   "dependencies": {
     "@gudy/shared": "workspace:*",
     "@prisma/client": "^5.14",
+    "prisma": "^5.14",
     "bcrypt": "^5",
     "google-auth-library": "^9",
     "multer": "^1.4",

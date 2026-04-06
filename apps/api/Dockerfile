@@ -52,12 +52,9 @@ COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
-# prisma CLI lives in the workspace root node_modules
-COPY --from=builder --chown=apiuser:nodejs /repo/node_modules/.pnpm     ./node_modules/.pnpm
-COPY --from=builder --chown=apiuser:nodejs /repo/node_modules/prisma    ./node_modules/prisma
 
 USER apiuser
 EXPOSE 3001
 
 # Run DB migrations then start the server
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
