@@ -50,13 +50,12 @@ RUN apk add --no-cache openssl \
  && adduser  --system --uid 1001 apiuser
 
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
+COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
 
-# Instala apenas as deps de producao (inclui prisma CLI agora que esta em dependencies)
-RUN chown -R apiuser:nodejs /app
-USER root
-RUN cd /app && npm install --omit=dev --ignore-scripts prisma @prisma/client
+# Copia o prisma CLI real (resolvido pelo pnpm) do builder
+COPY --from=builder /repo/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma ./node_modules/prisma
 
 USER apiuser
 EXPOSE 3001
