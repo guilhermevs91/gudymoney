@@ -107,6 +107,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Run database migrations
+        run: pnpm --filter api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://gudy:test_password@localhost:5432/gudy_money_test
+
       - name: Run tests
         run: pnpm --filter api test
 
