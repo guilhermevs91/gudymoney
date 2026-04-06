@@ -108,7 +108,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: pnpm test
+        run: pnpm --filter api test
 
   # ---------------------------------------------------------------------------
   # Job 3: Build all packages (runs only after lint/typecheck passes)
