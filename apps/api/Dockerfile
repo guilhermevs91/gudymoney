@@ -4,13 +4,13 @@
 # =============================================================================
 
 FROM node:20-alpine AS base
-WORKDIR /repo
 RUN npm install -g pnpm@9 --quiet
 
 # -----------------------------------------------------------------------------
 # Stage: deps — install all workspace deps
 # -----------------------------------------------------------------------------
 FROM base AS deps
+WORKDIR /repo
 
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/shared/package.json  ./packages/shared/
@@ -24,6 +24,7 @@ RUN pnpm install --frozen-lockfile
 # Stage: builder — generate Prisma client + compile TypeScript
 # -----------------------------------------------------------------------------
 FROM base AS builder
+WORKDIR /repo
 
 COPY --from=deps /repo/node_modules                  ./node_modules
 COPY --from=deps /repo/apps/api/node_modules         ./apps/api/node_modules
@@ -35,26 +36,27 @@ RUN pnpm --filter @gudy/api exec prisma generate
 RUN pnpm --filter @gudy/api build
 
 # -----------------------------------------------------------------------------
-# Stage: runner — lean production image
+# Stage: runner — roda o monorepo inteiro para preservar symlinks do pnpm
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runner
+WORKDIR /repo
 
-WORKDIR /app
 ENV NODE_ENV=production
 
 RUN apk add --no-cache openssl \
  && addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 apiuser
 
-COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
-COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
-COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
-COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
-
-# Copia todo o .pnpm para que os symlinks de node_modules funcionem
-COPY --from=builder --chown=apiuser:nodejs /repo/node_modules/.pnpm     ./node_modules/.pnpm
+# Copia o monorepo completo com node_modules (preserva symlinks do pnpm)
+COPY --from=builder --chown=apiuser:nodejs /repo/node_modules           ./node_modules
+COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./apps/api/node_modules
+COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./apps/api/dist
+COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./apps/api/prisma
+COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./apps/api/package.json
+COPY --from=builder --chown=apiuser:nodejs /repo/packages/shared        ./packages/shared
 
 USER apiuser
+WORKDIR /repo/apps/api
 EXPOSE 3001
 
 CMD ["node", "dist/index.js"]
