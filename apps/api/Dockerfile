@@ -53,11 +53,11 @@ RUN apk add --no-cache openssl
 
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
+COPY --from=builder --chown=apiuser:nodejs /repo/node_modules/.pnpm     ./node_modules/.pnpm
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
 
 USER apiuser
 EXPOSE 3001
 
-# Usa o prisma CLI que veio junto com as dependencias da app
 CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/index.js"]
