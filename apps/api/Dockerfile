@@ -53,8 +53,11 @@ COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_m
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
 
+# Instala prisma CLI diretamente na imagem de producao para rodar migrations
+RUN npm install -g prisma@5.22.0 --quiet
+
 USER apiuser
 EXPOSE 3001
 
 # Run DB migrations then start the server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "prisma migrate deploy && node dist/index.js"]
