@@ -614,24 +614,26 @@ export default function CreditCardDetailPage() {
               <div className="flex justify-between items-center mb-1">
                 <span className="font-medium capitalize">{invoiceMonthLabel(inv.period_end)}</span>
                 <div className="flex items-center gap-1">
-                  {!card?.parent_card_id && <div className="flex items-center gap-0.5 md:hidden md:group-hover:flex" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
-                      title="Editar fatura"
-                      onClick={() => {
-                        const toUTCDate = (iso: string) => {
-                          const d = new Date(iso);
-                          return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-                        };
-                        selectInvoice(inv);
-                        setEditInvoicePeriodStart(toUTCDate(inv.period_start));
-                        setEditInvoicePeriodEnd(toUTCDate(inv.period_end));
-                        setEditInvoiceDueDate(toUTCDate(inv.due_date));
-                        setEditInvoiceDialog(true);
-                      }}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
+                  <div className="flex items-center gap-0.5 md:hidden md:group-hover:flex" onClick={(e) => e.stopPropagation()}>
+                    {!card?.parent_card_id && (
+                      <button
+                        className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Editar fatura"
+                        onClick={() => {
+                          const toUTCDate = (iso: string) => {
+                            const d = new Date(iso);
+                            return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+                          };
+                          selectInvoice(inv);
+                          setEditInvoicePeriodStart(toUTCDate(inv.period_start));
+                          setEditInvoicePeriodEnd(toUTCDate(inv.period_end));
+                          setEditInvoiceDueDate(toUTCDate(inv.due_date));
+                          setEditInvoiceDialog(true);
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
                     <button
                       className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                       title="Excluir fatura"
@@ -642,7 +644,7 @@ export default function CreditCardDetailPage() {
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
-                  </div>}
+                  </div>
                   <Badge variant={statusVariant[inv.status] ?? 'secondary'} className="text-xs">
                     {invoiceStatusLabel(inv.status)}
                   </Badge>

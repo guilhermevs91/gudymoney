@@ -5,6 +5,11 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.3.3] - 2026-04-06
+
+### Corrigido
+- Cartão adicional: botão de excluir fatura agora aparece normalmente; apenas o botão de editar permanece oculto (datas herdadas do cartão pai)
+
 ## [1.3.2] - 2026-04-05
 
 ### Corrigido
