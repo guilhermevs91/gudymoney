@@ -45,19 +45,20 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs \
+RUN apk add --no-cache openssl \
+ && addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 apiuser
 
-# OpenSSL necessario para o Prisma engines no Alpine
-RUN apk add --no-cache openssl
-
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
-COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
-COPY --from=builder --chown=apiuser:nodejs /repo/node_modules/.pnpm     ./node_modules/.pnpm
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
+
+# Instala apenas as deps de producao (inclui prisma CLI agora que esta em dependencies)
+RUN chown -R apiuser:nodejs /app
+USER root
+RUN cd /app && npm install --omit=dev --ignore-scripts prisma @prisma/client
 
 USER apiuser
 EXPOSE 3001
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/index.js"]
