@@ -49,16 +49,16 @@ RUN apk add --no-cache openssl \
  && addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 apiuser
 
+# Copia codigo compilado, deps da app e schema prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
 
-# Copia o prisma CLI e engines do builder
-COPY --from=builder /repo/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma           ./node_modules/prisma
-COPY --from=builder /repo/node_modules/.pnpm/@prisma+engines@5.22.0/node_modules/@prisma/engines ./node_modules/@prisma/engines
+# Instala prisma CLI globalmente (como root, antes de trocar de usuario)
+RUN npm install -g prisma@5.22.0 --ignore-scripts
 
 USER apiuser
 EXPOSE 3001
 
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "prisma migrate deploy && node dist/index.js"]
