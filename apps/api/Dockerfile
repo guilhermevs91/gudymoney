@@ -54,8 +54,9 @@ COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_m
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
 
-# Copia o prisma CLI real (resolvido pelo pnpm) do builder
-COPY --from=builder /repo/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma ./node_modules/prisma
+# Copia o prisma CLI e engines do builder
+COPY --from=builder /repo/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma           ./node_modules/prisma
+COPY --from=builder /repo/node_modules/.pnpm/@prisma+engines@5.22.0/node_modules/@prisma/engines ./node_modules/@prisma/engines
 
 USER apiuser
 EXPOSE 3001
