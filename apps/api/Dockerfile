@@ -48,16 +48,16 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs \
  && adduser  --system --uid 1001 apiuser
 
+# OpenSSL necessario para o Prisma engines no Alpine
+RUN apk add --no-cache openssl
+
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/dist          ./dist
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/node_modules  ./node_modules
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/prisma        ./prisma
 COPY --from=builder --chown=apiuser:nodejs /repo/apps/api/package.json  ./package.json
 
-# Instala prisma CLI diretamente na imagem de producao para rodar migrations
-RUN npm install -g prisma@5.22.0 --quiet
-
 USER apiuser
 EXPOSE 3001
 
-# Run DB migrations then start the server
-CMD ["sh", "-c", "prisma migrate deploy && node dist/index.js"]
+# Usa o prisma CLI que veio junto com as dependencias da app
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/index.js"]
