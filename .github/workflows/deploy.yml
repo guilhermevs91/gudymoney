@@ -66,7 +66,7 @@ jobs:
     steps:
       - name: Trigger Portainer stack update
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          STATUS=$(curl -sk -o /dev/null -w "%{http_code}" \
             -X POST "${{ secrets.PORTAINER_URL }}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}/images/update" \
             -H "X-API-Key: ${{ secrets.PORTAINER_API_KEY }}")
           echo "Portainer response: $STATUS"
