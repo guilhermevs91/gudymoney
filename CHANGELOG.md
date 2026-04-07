@@ -5,6 +5,15 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.8.0] - 2026-04-07
+
+### Adicionado
+- PWA completo: manifest.webmanifest com ícones, start_url, display standalone e theme-color — agora todas as páginas funcionam como PWA ao adicionar à tela inicial
+- Ícones PWA 192x192 e 512x512
+
+### Alterado
+- Modais mobile: agora sobem de baixo como bottom sheet (mais natural no celular) com botão fechar redondo e visível no canto superior direito
+
 ## [1.7.1] - 2026-04-07
 
 ### Corrigido
