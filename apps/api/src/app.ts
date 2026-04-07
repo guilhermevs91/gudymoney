@@ -23,6 +23,9 @@ import invitesRouter from './modules/invites/invites.routes';
 
 const app: express.Express = express();
 
+// Trust proxy (Nginx)
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 

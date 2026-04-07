@@ -12,6 +12,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Corrigido
 - Mobile: menu lateral não abria porque `onMobileClose` era recriado a cada render, fechando o drawer imediatamente após abrir
+- API: `trust proxy` habilitado para o Nginx — resolvia crash `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` que derrubava o rate limiter e causava Bad Gateway
 
 ## [1.3.6] - 2026-04-06
 
