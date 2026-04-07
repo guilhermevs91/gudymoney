@@ -5,6 +5,26 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.3.5] - 2026-04-06
+
+### Adicionado
+- SuperAdmin: página de Logs de Segurança (`/superadmin/security`) com resumo de eventos, top IPs por login, IPs suspeitos, filtros por período/ação/IP e tabela paginada
+
+## [1.3.4] - 2026-04-06
+
+### Adicionado
+- SuperAdmin: novo endpoint `GET /superadmin/security-logs` com lista de eventos de auditoria, resumo dos IPs com mais logins e IPs suspeitos por período configurável (`hours`, padrão 24h)
+
+### Alterado
+- Rate limit global aumentado de 100 para 500 req/15min em produção (evita bloqueios em uso normal)
+- Rate limit específico para `/auth/*`: 20 req/15min por IP em produção (proteção contra força bruta)
+
+## [1.3.4] - 2026-04-06
+
+### Corrigido
+- Cartão adicional: pagamento de fatura agora usa a conta interna do cartão pai (resolvia erro "Conta interna do cartão não encontrada")
+- Cartão adicional: inputs de data no dialog de edição de fatura com atributo `max` para melhor compatibilidade mobile
+
 ## [1.3.3] - 2026-04-06
 
 ### Corrigido

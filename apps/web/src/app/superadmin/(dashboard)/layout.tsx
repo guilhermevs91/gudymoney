@@ -6,12 +6,13 @@ import Link from 'next/link'
 import { getSuperAdminToken, clearSuperAdminToken } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { BarChart2, Building2, LayoutDashboard, LogOut, Sliders } from 'lucide-react'
+import { BarChart2, Building2, LayoutDashboard, LogOut, Shield, Sliders } from 'lucide-react'
 
 const navLinks = [
   { href: '/superadmin/metrics', label: 'Métricas', icon: BarChart2 },
   { href: '/superadmin/tenants', label: 'Tenants', icon: Building2 },
   { href: '/superadmin/features', label: 'Planos', icon: Sliders },
+  { href: '/superadmin/security', label: 'Segurança', icon: Shield },
 ]
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
