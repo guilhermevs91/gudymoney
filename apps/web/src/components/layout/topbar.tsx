@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, Moon, Sun, Menu } from 'lucide-react';
+import { QuickTransactionButton } from '@/components/shared/quick-transaction-button';
 import { useEffect, useState } from 'react';
 
 interface TopbarProps {
@@ -52,6 +53,10 @@ export function Topbar({ onMenuClick }: TopbarProps) {
       <div className="hidden md:block" />
 
       <div className="flex items-center gap-2">
+        {/* Botão Nova Transação — apenas desktop, fixo na topbar */}
+        <div className="hidden md:block">
+          <QuickTransactionButton />
+        </div>
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>

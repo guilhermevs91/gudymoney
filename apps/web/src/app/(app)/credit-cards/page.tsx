@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { CurrencyInput } from '@/components/shared/currency-input'
 import { cn, formatCurrency, invoiceStatusLabel, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -334,14 +335,9 @@ export default function CreditCardsPage() {
             {!editItem?.parent_card_id && (
               <div className="space-y-1.5">
                 <Label htmlFor="card-limit">Limite total (R$) *</Label>
-                <Input
-                  id="card-limit"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <CurrencyInput
                   value={form.limit_total}
-                  onChange={(e) => setForm({ ...form, limit_total: e.target.value })}
-                  placeholder="Ex: 5000.00"
+                  onChange={(v) => setForm({ ...form, limit_total: v })}
                 />
               </div>
             )}

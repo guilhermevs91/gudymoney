@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { formatCurrency, formatMonth, currentYearMonth } from '@/lib/utils';
 import { PageHeader } from '@/components/shared/page-header';
@@ -41,34 +41,35 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData>({ summary: null, accounts: [], budgetItems: [], projection: [] });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     setLoading(true);
-    async function load() {
-      try {
-        const [summaryRes, accountsRes, budgetRes, projectionRes] = await Promise.allSettled([
-          api.get<LedgerSummary>(`/ledger/summary?year=${nav.year}&month=${nav.month}`),
-          api.get<{ data: Account[] }>('/accounts'),
-          api.get<{ data: Budget }>(`/budgets?year=${nav.year}&month=${nav.month}`),
-          api.get<{ data: ProjectionPoint[] }>(`/transactions/projection?year=${nav.year}&month=${nav.month}`),
-        ]);
+    try {
+      const [summaryRes, accountsRes, budgetRes, projectionRes] = await Promise.allSettled([
+        api.get<LedgerSummary>(`/ledger/summary?year=${nav.year}&month=${nav.month}`),
+        api.get<{ data: Account[] }>('/accounts'),
+        api.get<{ data: Budget }>(`/budgets?year=${nav.year}&month=${nav.month}`),
+        api.get<{ data: ProjectionPoint[] }>(`/transactions/projection?year=${nav.year}&month=${nav.month}`),
+      ]);
 
-        setData({
-          summary: summaryRes.status === 'fulfilled' ? summaryRes.value : null,
-          accounts:
-            accountsRes.status === 'fulfilled'
-              ? accountsRes.value.data.filter((a) => a.type !== 'INTERNAL')
-              : [],
-          budgetItems:
-            budgetRes.status === 'fulfilled' ? (budgetRes.value.data?.budget_items ?? []) : [],
-          projection:
-            projectionRes.status === 'fulfilled' ? projectionRes.value.data : [],
-        });
-      } finally {
-        setLoading(false);
-      }
+      setData({
+        summary: summaryRes.status === 'fulfilled' ? summaryRes.value : null,
+        accounts:
+          accountsRes.status === 'fulfilled'
+            ? accountsRes.value.data.filter((a) => a.type !== 'INTERNAL')
+            : [],
+        budgetItems:
+          budgetRes.status === 'fulfilled' ? (budgetRes.value.data?.budget_items ?? []) : [],
+        projection:
+          projectionRes.status === 'fulfilled' ? projectionRes.value.data : [],
+      });
+    } finally {
+      setLoading(false);
     }
-    load();
   }, [nav]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (loading) {
     return (

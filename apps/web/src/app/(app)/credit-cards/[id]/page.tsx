@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { CurrencyInput } from '@/components/shared/currency-input';
 import { api } from '@/lib/api';
 import {
   formatCurrency,
@@ -42,8 +43,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Plus, CreditCard as CreditCardIcon, CheckCircle, Trash2, Pencil, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft, Plus, CreditCard as CreditCardIcon, CheckCircle, Trash2, Pencil, ClipboardCheck, RotateCcw } from 'lucide-react';
 import type { Account, Category, CreditCard, CreditCardInvoice, Transaction } from '@/types';
+
+interface InvoicePayment {
+  id: string;
+  amount: number;
+  paid_at: string;
+  account_id: string;
+  notes?: string | null;
+}
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   OPEN: 'default',
@@ -94,6 +103,10 @@ export default function CreditCardDetailPage() {
   const [payAmount, setPayAmount] = useState('');
   const [payAccountId, setPayAccountId] = useState('');
   const [paying, setPaying] = useState(false);
+
+  // Invoice payments list
+  const [invoicePayments, setInvoicePayments] = useState<InvoicePayment[]>([]);
+  const [reversingPaymentId, setReversingPaymentId] = useState<string | null>(null);
 
   // New transaction dialog
   const [txDialog, setTxDialog] = useState(false);
@@ -165,10 +178,11 @@ export default function CreditCardDetailPage() {
     setSelectedInvoice(invoice);
     setLoadingTxns(true);
     try {
-      const res = await api.get<{ data: Transaction[] }>(
-        `/credit-cards/${id}/invoices/${invoice.id}/transactions`,
-      );
-      setTransactions(res.data);
+      const [txRes] = await Promise.all([
+        api.get<{ data: Transaction[] }>(`/credit-cards/${id}/invoices/${invoice.id}/transactions`),
+        loadInvoicePayments(invoice.id),
+      ]);
+      setTransactions(txRes.data);
     } catch {
       setTransactions([]);
     } finally {
@@ -224,6 +238,37 @@ export default function CreditCardDetailPage() {
     load();
   }, [id]);
 
+  async function loadInvoicePayments(invoiceId: string) {
+    try {
+      const res = await api.get<{ data: InvoicePayment[] }>(`/credit-cards/${id}/invoices/${invoiceId}/payments`);
+      setInvoicePayments(res.data);
+    } catch {
+      setInvoicePayments([]);
+    }
+  }
+
+  async function handleReversePayment(paymentId: string) {
+    if (!selectedInvoice) return;
+    setReversingPaymentId(paymentId);
+    try {
+      await api.delete(`/credit-cards/${id}/invoices/${selectedInvoice.id}/payments/${paymentId}`);
+      toast({ title: 'Pagamento estornado com sucesso.' });
+      await loadInvoicePayments(selectedInvoice.id);
+      await loadCard();
+      const sorted = await loadInvoices();
+      const updated = sorted.find((i) => i.id === selectedInvoice.id);
+      if (updated) await selectInvoice(updated);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao estornar pagamento.',
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setReversingPaymentId(null);
+    }
+  }
+
   async function handlePay() {
     if (!selectedInvoice) return;
     if (!payAccountId) {
@@ -242,6 +287,7 @@ export default function CreditCardDetailPage() {
       setPayAmount('');
       setPayAccountId('');
       await loadCard();
+      await loadInvoicePayments(selectedInvoice.id);
       const sorted = await loadInvoices();
       const updated = sorted.find((i) => i.id === selectedInvoice.id);
       if (updated) await selectInvoice(updated);
@@ -722,6 +768,37 @@ export default function CreditCardDetailPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-3 md:p-6">
+                {/* Pagamentos registrados */}
+                {invoicePayments.length > 0 && (
+                  <div className="mb-4 rounded-md border bg-muted/30 p-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Pagamentos registrados</p>
+                    {invoicePayments.map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between text-sm">
+                        <div>
+                          <span className="font-medium">{formatCurrency(Number(payment.amount))}</span>
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {new Date(payment.paid_at).toLocaleDateString('pt-BR')}
+                          </span>
+                          {payment.notes && (
+                            <span className="text-muted-foreground ml-2 text-xs">· {payment.notes}</span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          disabled={reversingPaymentId === payment.id}
+                          onClick={() => handleReversePayment(payment.id)}
+                          title="Estornar pagamento"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                          {reversingPaymentId === payment.id ? 'Estornando...' : 'Estornar'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {loadingTxns ? (
                   <div className="space-y-2">
                     {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10" />)}
@@ -955,7 +1032,7 @@ export default function CreditCardDetailPage() {
             )}
             <div className="space-y-1.5">
               <Label>Valor pago (R$)</Label>
-              <Input type="number" step="0.01" min="0.01" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
+              <CurrencyInput value={payAmount} onChange={(v) => setPayAmount(v)} />
             </div>
             <div className="space-y-1.5">
               <Label>Conta para débito</Label>
@@ -998,7 +1075,7 @@ export default function CreditCardDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Valor (R$) *</Label>
-                <Input type="number" min="0.01" step="0.01" value={txAmount} onChange={(e) => setTxAmount(e.target.value)} />
+                <CurrencyInput value={txAmount} onChange={(v) => setTxAmount(v)} />
               </div>
               <div className="space-y-1">
                 <Label>Data *</Label>
@@ -1046,7 +1123,7 @@ export default function CreditCardDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Valor total (R$) *</Label>
-                <Input type="number" min="0.01" step="0.01" value={instTotal} onChange={(e) => setInstTotal(e.target.value)} />
+                <CurrencyInput value={instTotal} onChange={(v) => setInstTotal(v)} />
               </div>
               <div className="space-y-1">
                 <Label>Nº de parcelas *</Label>
@@ -1101,9 +1178,9 @@ export default function CreditCardDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Valor (R$)</Label>
-                <Input
-                  type="number"
+                <CurrencyInput
                   value={editAmount}
+                  onChange={() => {}}
                   disabled
                   className="opacity-60 cursor-not-allowed"
                 />

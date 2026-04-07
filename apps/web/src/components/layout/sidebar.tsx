@@ -15,6 +15,7 @@ import {
   Bell,
   Settings,
   ChevronRight,
+  ChevronLeft,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,19 +44,42 @@ const settingsItems = [
 interface SidebarContentProps {
   pathname: string;
   appVersion: string;
+  collapsed: boolean;
   onChangelogOpen: () => void;
   onNavClick?: () => void;
+  onToggleCollapse?: () => void;
 }
 
-function SidebarContent({ pathname, appVersion, onChangelogOpen, onNavClick }: SidebarContentProps) {
+function SidebarContent({ pathname, appVersion, collapsed, onChangelogOpen, onNavClick, onToggleCollapse }: SidebarContentProps) {
   return (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="flex items-center gap-2 h-14 px-4 border-b shrink-0">
-        <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-xs">G</span>
-        </div>
-        <span className="font-semibold text-sm">Gudy Money</span>
+      {/* Logo + collapse button */}
+      <div className={cn('flex items-center h-14 border-b shrink-0', collapsed ? 'justify-center px-2' : 'px-4 gap-2')}>
+        {!collapsed && (
+          <>
+            <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center shrink-0">
+              <span className="text-primary-foreground font-bold text-xs">G</span>
+            </div>
+            <span className="font-semibold text-sm flex-1">Gudy Money</span>
+          </>
+        )}
+        {collapsed && (
+          <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-xs">G</span>
+          </div>
+        )}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              'p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors',
+              collapsed && 'mt-0',
+            )}
+            title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            <ChevronLeft className={cn('h-4 w-4 transition-transform duration-200', collapsed && 'rotate-180')} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -67,24 +91,29 @@ function SidebarContent({ pathname, appVersion, onChangelogOpen, onNavClick }: S
               key={item.href}
               href={item.href}
               onClick={onNavClick}
+              title={collapsed ? item.label : undefined}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                collapsed ? 'justify-center px-2' : 'gap-3',
                 active
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              {!collapsed && item.label}
             </Link>
           );
         })}
 
         {/* Settings group */}
         <div className="pt-4">
-          <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-            Configurações
-          </p>
+          {!collapsed && (
+            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Configurações
+            </p>
+          )}
+          {collapsed && <div className="border-t mx-2 mb-2" />}
           {settingsItems.map((item) => {
             const active = pathname === item.href;
             return (
@@ -92,16 +121,22 @@ function SidebarContent({ pathname, appVersion, onChangelogOpen, onNavClick }: S
                 key={item.href}
                 href={item.href}
                 onClick={onNavClick}
+                title={collapsed ? item.label : undefined}
                 className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  collapsed ? 'justify-center px-2' : 'gap-3',
                   active
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                 )}
               >
                 <Settings className="h-4 w-4 shrink-0" />
-                {item.label}
-                <ChevronRight className="ml-auto h-3 w-3 opacity-50" />
+                {!collapsed && (
+                  <>
+                    {item.label}
+                    <ChevronRight className="ml-auto h-3 w-3 opacity-50" />
+                  </>
+                )}
               </Link>
             );
           })}
@@ -109,18 +144,20 @@ function SidebarContent({ pathname, appVersion, onChangelogOpen, onNavClick }: S
       </nav>
 
       {/* Footer — versão */}
-      <div className="shrink-0 px-4 py-3 border-t">
-        <button
-          onClick={onChangelogOpen}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 group-hover:bg-primary transition-colors" />
-          v{appVersion}
-          <span className="text-muted-foreground/50 group-hover:text-muted-foreground transition-colors">
-            — ver novidades
-          </span>
-        </button>
-      </div>
+      {!collapsed && (
+        <div className="shrink-0 px-4 py-3 border-t">
+          <button
+            onClick={onChangelogOpen}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 group-hover:bg-primary transition-colors" />
+            v{appVersion}
+            <span className="text-muted-foreground/50 group-hover:text-muted-foreground transition-colors">
+              — ver novidades
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -130,17 +167,28 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
+const COLLAPSED_KEY = 'gm_sidebar_collapsed';
+
 export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [appVersion, setAppVersion] = useState('...');
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     fetch('/api/version')
       .then((r) => r.json())
       .then((d) => setAppVersion(d.version))
       .catch(() => setAppVersion('—'));
+    // Restore collapsed state
+    setCollapsed(localStorage.getItem(COLLAPSED_KEY) === 'true');
   }, []);
+
+  function toggleCollapse() {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem(COLLAPSED_KEY, String(next));
+  }
 
   // Close drawer on route change (use ref to avoid closing on every render)
   const onMobileCloseRef = useRef(onMobileClose);
@@ -152,11 +200,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 min-h-screen border-r bg-card">
+      <aside className={cn(
+        'hidden md:flex flex-col min-h-screen border-r bg-card transition-all duration-200',
+        collapsed ? 'w-14' : 'w-60',
+      )}>
         <SidebarContent
           pathname={pathname}
           appVersion={appVersion}
+          collapsed={collapsed}
           onChangelogOpen={() => setChangelogOpen(true)}
+          onToggleCollapse={toggleCollapse}
         />
       </aside>
 
@@ -179,6 +232,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             <SidebarContent
               pathname={pathname}
               appVersion={appVersion}
+              collapsed={false}
               onChangelogOpen={() => { setChangelogOpen(true); onMobileClose(); }}
               onNavClick={onMobileClose}
             />

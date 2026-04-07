@@ -1,4 +1,4 @@
-import { Prisma, type PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient, type CreditCardInvoice } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { createAuditLog } from '../../lib/audit';
 import {
@@ -1026,6 +1026,136 @@ export const creditCardsService = {
           paid_at: paidAt.toISOString(),
           account_id: data.account_id,
           new_status: updatedInvoice.status,
+        },
+        ipAddress: ipAddress ?? null,
+        userAgent: userAgent ?? null,
+      });
+    });
+
+    return { data: updatedInvoice! };
+  },
+
+  // -------------------------------------------------------------------------
+  // List invoice payments
+  // -------------------------------------------------------------------------
+
+  async listInvoicePayments(cardId: string, invoiceId: string, tenantId: string) {
+    const invoice = await creditCardsRepository.findInvoiceById(invoiceId, tenantId);
+    if (invoice === null || invoice.credit_card_id !== cardId) {
+      throw new NotFoundError('Fatura não encontrada.');
+    }
+    const payments = await prisma.invoicePayment.findMany({
+      where: { invoice_id: invoiceId, tenant_id: tenantId },
+      orderBy: { paid_at: 'desc' },
+      select: { id: true, amount: true, paid_at: true, account_id: true, notes: true },
+    });
+    return { data: payments };
+  },
+
+  // -------------------------------------------------------------------------
+  // Reverse invoice payment (estorno)
+  // -------------------------------------------------------------------------
+
+  async reverseInvoicePayment(
+    cardId: string,
+    invoiceId: string,
+    paymentId: string,
+    tenantId: string,
+    userId: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // 1. Find invoice
+    const invoice = await creditCardsRepository.findInvoiceById(invoiceId, tenantId);
+    if (invoice === null || invoice.credit_card_id !== cardId) {
+      throw new NotFoundError('Fatura não encontrada.');
+    }
+
+    // 2. Find payment
+    const payment = await prisma.invoicePayment.findFirst({
+      where: { id: paymentId, invoice_id: invoiceId, tenant_id: tenantId },
+    });
+    if (payment === null) {
+      throw new NotFoundError('Pagamento não encontrado.');
+    }
+
+    // 3. Find the transaction linked to this payment (by invoice + account + amount + description)
+    const paymentTransaction = await prisma.transaction.findFirst({
+      where: {
+        tenant_id: tenantId,
+        credit_card_invoice_id: invoiceId,
+        account_id: payment.account_id,
+        amount: payment.amount,
+        description: 'Pagamento de fatura',
+        status: { not: 'CANCELADO' },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    // 4. Get card and internal account
+    const card = await creditCardsRepository.findById(cardId, tenantId);
+    if (card === null) throw new NotFoundError('Cartão não encontrado.');
+    const principalCardId = card.parent_card_id ?? card.id;
+    const internalAccount = await prisma.account.findFirst({
+      where: { credit_card_id: principalCardId, tenant_id: tenantId, deleted_at: null, type: 'INTERNAL' },
+      select: { id: true },
+    });
+    if (internalAccount === null) throw new ValidationError('Conta interna do cartão não encontrada.');
+
+    let updatedInvoice: CreditCardInvoice;
+
+    await prisma.$transaction(async (tx: PrismaTransactionClient) => {
+      // 5a. Cancel the payment transaction and its ledger entries
+      if (paymentTransaction) {
+        await tx.ledgerEntry.updateMany({
+          where: { transaction_id: paymentTransaction.id, tenant_id: tenantId },
+          data: { status: 'CANCELADO' },
+        });
+        await tx.transaction.update({
+          where: { id: paymentTransaction.id },
+          data: { status: 'CANCELADO' },
+        });
+      }
+
+      // 5b. Delete the invoice payment record
+      await tx.invoicePayment.delete({ where: { id: paymentId } });
+
+      // 5c. Reverse total_paid on invoice
+      const wasFullyPaid = invoice.status === 'PAID';
+      await tx.creditCardInvoice.update({
+        where: { id: invoiceId },
+        data: { total_paid: { decrement: payment.amount } },
+      });
+
+      const refreshed = await tx.creditCardInvoice.findUniqueOrThrow({ where: { id: invoiceId } });
+      let newStatus: typeof refreshed.status;
+      if (refreshed.total_paid.lte(new Prisma.Decimal(0))) {
+        newStatus = refreshed.due_date < new Date() ? 'CLOSED' : 'OPEN';
+      } else {
+        newStatus = 'PARTIAL';
+      }
+      updatedInvoice = await tx.creditCardInvoice.update({
+        where: { id: invoiceId },
+        data: { status: newStatus, total_paid: { set: refreshed.total_paid.lte(0) ? new Prisma.Decimal(0) : refreshed.total_paid } },
+      });
+
+      // 5d. Re-block limit if invoice was previously PAID
+      if (wasFullyPaid) {
+        await creditCardsRepository.blockLimit(principalCardId, tenantId, invoice.total_amount, tx);
+      }
+
+      // 5e. Audit log
+      await createAuditLog({
+        prisma: tx as unknown as PrismaClient,
+        tenantId,
+        userId,
+        entityType: 'InvoicePayment',
+        entityId: invoiceId,
+        action: 'DELETE',
+        afterData: {
+          payment_id: paymentId,
+          reversed_amount: payment.amount.toString(),
+          new_status: newStatus,
         },
         ipAddress: ipAddress ?? null,
         userAgent: userAgent ?? null,

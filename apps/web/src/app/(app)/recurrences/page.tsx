@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
+import { CurrencyInput } from '@/components/shared/currency-input';
 import { formatCurrency, formatDate, typeLabel, frequencyLabel, flatCategoryOptions, filterCategoriesByType } from '@/lib/utils';
 import { PageHeader } from '@/components/shared/page-header';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -379,13 +380,9 @@ export default function RecurrencesPage() {
 
               <div className="space-y-1">
                 <Label>Valor (R$)</Label>
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
+                <CurrencyInput
                   value={form.amount}
-                  onChange={(e) => setField('amount', e.target.value)}
-                  placeholder="0,00"
+                  onChange={(v) => setField('amount', v)}
                 />
               </div>
             </div>

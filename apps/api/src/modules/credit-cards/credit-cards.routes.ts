@@ -117,6 +117,14 @@ router.get(
   creditCardsController.listInvoiceTransactions,
 );
 
+// GET /credit-cards/:id/invoices/:invoiceId/payments
+router.get(
+  '/:id/invoices/:invoiceId/payments',
+  authenticateUser,
+  requireTenantAccess,
+  creditCardsController.listInvoicePayments,
+);
+
 // POST /credit-cards/:id/invoices/:invoiceId/pay
 router.post(
   '/:id/invoices/:invoiceId/pay',
@@ -124,6 +132,14 @@ router.post(
   requireTenantAccess,
   validateBody(payInvoiceSchema),
   creditCardsController.payInvoice,
+);
+
+// DELETE /credit-cards/:id/invoices/:invoiceId/payments/:paymentId
+router.delete(
+  '/:id/invoices/:invoiceId/payments/:paymentId',
+  authenticateUser,
+  requireTenantAccess,
+  creditCardsController.reverseInvoicePayment,
 );
 
 export default router;

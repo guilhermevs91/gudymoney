@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
+import { CurrencyInput } from '@/components/shared/currency-input';
 import {
   cn,
   formatDate,
@@ -75,6 +76,7 @@ interface FormData {
   category_id: string;
   account_id: string;
   credit_card_id: string;
+  target_account_id: string;
   notes: string;
   pix_key: string;
 }
@@ -93,6 +95,7 @@ function defaultForm(): FormData {
     category_id: '',
     account_id: '',
     credit_card_id: '',
+    target_account_id: '',
     notes: '',
     pix_key: '',
   };
@@ -297,11 +300,20 @@ export default function TransactionsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleSave() {
-    if (!form.description.trim()) {
-      toast({ title: 'Informe a descrição', variant: 'destructive' });
-      return;
+  function buildAutoDescription(): string {
+    const date = form.date ? new Date(form.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+    if (form.type === 'TRANSFER') {
+      const origin = accounts.find((a) => a.id === form.account_id)?.name ?? 'Origem';
+      const dest = accounts.find((a) => a.id === form.target_account_id)?.name ?? 'Destino';
+      return `Trans ${origin} > ${dest} - ${date}`;
     }
+    const allCats = flatCategoryOptions(categories);
+    const cat = allCats.find((c) => c.id === form.category_id);
+    if (cat) return `${cat.name} - ${date}`;
+    return `${form.type === 'INCOME' ? 'Receita' : 'Despesa'} - ${date}`;
+  }
+
+  async function handleSave() {
     if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) {
       toast({ title: 'Informe um valor válido', variant: 'destructive' });
       return;
@@ -311,9 +323,11 @@ export default function TransactionsPage() {
       return;
     }
 
+    const description = form.description.trim() || buildAutoDescription();
+
     const payload: Record<string, unknown> = {
       status: form.status,
-      description: form.description.trim(),
+      description,
       amount: Number(form.amount),
       date: form.date,
       category_id: form.category_id || null,
@@ -324,7 +338,10 @@ export default function TransactionsPage() {
     // These fields are only sent on create
     if (!editingId) {
       payload.type = form.type;
-      if (form.credit_card_id) {
+      if (form.type === 'TRANSFER') {
+        payload.account_id = form.account_id || null;
+        payload.target_account_id = form.target_account_id || null;
+      } else if (form.credit_card_id) {
         payload.credit_card_id = form.credit_card_id;
       } else if (form.account_id) {
         payload.account_id = form.account_id;
@@ -947,13 +964,9 @@ export default function TransactionsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Valor (R$)</Label>
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
+                <CurrencyInput
                   value={form.amount}
-                  onChange={(e) => setField('amount', e.target.value)}
-                  placeholder="0,00"
+                  onChange={(v) => setField('amount', v)}
                 />
               </div>
 
@@ -982,7 +995,40 @@ export default function TransactionsPage() {
               </Select>
             </div>
 
-            {!editingId && (
+            {!editingId && form.type === 'TRANSFER' && (
+              <>
+                <div className="space-y-1">
+                  <Label>Conta origem</Label>
+                  <Select value={form.account_id || '_none'} onValueChange={(v) => setField('account_id', v === '_none' ? '' : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta de origem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Selecione...</SelectItem>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Conta destino</Label>
+                  <Select value={form.target_account_id || '_none'} onValueChange={(v) => setField('target_account_id', v === '_none' ? '' : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a conta de destino" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Selecione...</SelectItem>
+                      {accounts.filter((a) => a.id !== form.account_id).map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {!editingId && form.type !== 'TRANSFER' && (
               <>
                 <div className="space-y-1">
                   <Label>Cartão de Crédito</Label>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { CurrencyInput } from '@/components/shared/currency-input'
 import { cn, formatCurrency, accountTypeLabel } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -311,13 +312,9 @@ export default function AccountsPage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="acc-balance">Saldo inicial</Label>
-              <Input
-                id="acc-balance"
-                type="number"
-                step="0.01"
+              <CurrencyInput
                 value={form.initial_balance}
-                onChange={(e) => setForm({ ...form, initial_balance: e.target.value })}
-                placeholder="0,00"
+                onChange={(v) => setForm({ ...form, initial_balance: v })}
               />
             </div>
 

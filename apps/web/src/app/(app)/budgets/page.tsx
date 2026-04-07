@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
+import { CurrencyInput } from '@/components/shared/currency-input';
 import { formatCurrency, formatMonth, currentYearMonth, flatCategoryOptions, filterCategoriesByType } from '@/lib/utils';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
@@ -422,6 +423,82 @@ export default function BudgetsPage() {
             </div>
           ) : (
             <>
+              {/* Totais — mobile: acima da lista (compacto inline); desktop: abaixo em cards */}
+              {items.length > 0 && (
+                <>
+                  {/* Mobile: barra compacta no topo */}
+                  <div className="md:hidden rounded-lg border bg-card px-3 py-2 mb-3 flex gap-3 flex-wrap">
+                    {expenseItems.length > 0 && (
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <span className="text-xs font-semibold text-muted-foreground shrink-0">Despesas</span>
+                        <div className="flex gap-2 text-xs tabular-nums flex-wrap">
+                          <span className="text-muted-foreground">Plan: <span className="font-semibold text-foreground">{formatCurrency(totalPlanned)}</span></span>
+                          <span className="text-muted-foreground">Real: <span className={`font-semibold ${totalActual > totalPlanned ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>{formatCurrency(totalActual)}</span></span>
+                          <span className="text-muted-foreground">Saldo: <span className={`font-semibold ${totalPlanned - totalActual < 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>{formatCurrency(totalPlanned - totalActual)}</span></span>
+                        </div>
+                      </div>
+                    )}
+                    {incomeItems.length > 0 && (
+                      <div className="flex items-center gap-3 flex-1 min-w-0 border-t md:border-t-0 pt-2 md:pt-0">
+                        <span className="text-xs font-semibold text-muted-foreground shrink-0">Receitas</span>
+                        <div className="flex gap-2 text-xs tabular-nums flex-wrap">
+                          <span className="text-muted-foreground">Plan: <span className="font-semibold text-foreground">{formatCurrency(totalIncomePlanned)}</span></span>
+                          <span className="text-muted-foreground">Real: <span className={`font-semibold ${totalIncomeActual >= totalIncomePlanned ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>{formatCurrency(totalIncomeActual)}</span></span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Desktop: cards abaixo da lista */}
+                  <div className="hidden md:grid mt-4 grid-cols-2 gap-4">
+                    {expenseItems.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">Total Despesas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex gap-6">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Planejado</p>
+                            <p className="text-lg font-bold">{formatCurrency(totalPlanned)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Realizado</p>
+                            <p className={`text-lg font-bold ${totalActual > totalPlanned ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                              {formatCurrency(totalActual)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Saldo</p>
+                            <p className={`text-lg font-bold ${totalPlanned - totalActual < 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                              {formatCurrency(totalPlanned - totalActual)}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {incomeItems.length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">Total Receitas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex gap-6">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Previsto</p>
+                            <p className="text-lg font-bold">{formatCurrency(totalIncomePlanned)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Realizado</p>
+                            <p className={`text-lg font-bold ${totalIncomeActual >= totalIncomePlanned ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                              {formatCurrency(totalIncomeActual)}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </>
+              )}
+
               {/* Desktop table */}
               <div className="hidden md:block rounded-md border">
                 <Table>
@@ -507,55 +584,6 @@ export default function BudgetsPage() {
               </div>
             </>
           )}
-
-          {items.length > 0 && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {expenseItems.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Despesas</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex gap-6">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Planejado</p>
-                      <p className="text-lg font-bold">{formatCurrency(totalPlanned)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Realizado</p>
-                      <p className={`text-lg font-bold ${totalActual > totalPlanned ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
-                        {formatCurrency(totalActual)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Saldo</p>
-                      <p className={`text-lg font-bold ${totalPlanned - totalActual < 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
-                        {formatCurrency(totalPlanned - totalActual)}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              {incomeItems.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Receitas</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex gap-6">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Previsto</p>
-                      <p className="text-lg font-bold">{formatCurrency(totalIncomePlanned)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Realizado</p>
-                      <p className={`text-lg font-bold ${totalIncomeActual >= totalIncomePlanned ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
-                        {formatCurrency(totalIncomeActual)}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
         </>
       )}
 
@@ -609,13 +637,9 @@ export default function BudgetsPage() {
 
             <div className="space-y-1">
               <Label>Valor Planejado (R$)</Label>
-              <Input
-                type="number"
-                min="0.01"
-                step="0.01"
+              <CurrencyInput
                 value={itemPlanned}
-                onChange={(e) => setItemPlanned(e.target.value)}
-                placeholder="0,00"
+                onChange={(v) => setItemPlanned(v)}
               />
             </div>
 

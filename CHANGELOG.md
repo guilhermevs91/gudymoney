@@ -5,6 +5,62 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.6.3] - 2026-04-07
+
+### Corrigido
+- PWA mobile: removido ícone do navegador ao navegar entre páginas — substituído por barra de progresso fina no topo usando `next-nprogress-bar`
+
+## [1.6.2] - 2026-04-07
+
+### Alterado
+- Orçamento mobile: totais movidos para o topo da lista em formato compacto inline (Plan / Real / Saldo em uma única barra), em vez de cards grandes abaixo de tudo
+
+## [1.6.1] - 2026-04-07
+
+### Corrigido
+- Mobile: botão "Nova Transação" movido para dentro do menu inferior (BottomNav), centralizado entre os ícones de navegação — não sobrepõe mais o menu
+- BottomNav reorganizado em 2 itens + botão central + 2 itens para acomodar o botão sem sobreposição
+
+## [1.6.0] - 2026-04-07
+
+### Adicionado
+- Botão "Nova Transação" global: flutuante redondo fixo no canto inferior direito no mobile (presente em todas as páginas), e botão fixo na topbar no desktop
+- O modal abre com formulário completo (tipo, status, valor com máscara, data, categoria, conta/cartão, Pix, observações)
+- Após criar, os dados da página são recarregados automaticamente
+
+## [1.5.1] - 2026-04-07
+
+### Corrigido
+- Cartão de crédito: campo Valor no diálogo de editar lançamento agora exibe o valor formatado com máscara de moeda (campo desabilitado)
+
+## [1.5.0] - 2026-04-07
+
+### Adicionado
+- Máscara de moeda em todos os campos de valor monetário: o usuário digita apenas números (ex: `8605`) e o campo exibe automaticamente `86,05` — sem precisar digitar vírgula
+- Campos afetados: Transações, Recorrências, Contas (saldo inicial), Orçamento (valor planejado), Cartões (limite total), Fatura (valor pago, novo lançamento, valor total do parcelamento)
+
+## [1.4.1] - 2026-04-07
+
+### Adicionado
+- Transações: descrição automática quando não preenchida — Transferência: "Trans X > Y - data", com categoria: "Categoria - data", sem categoria: "Despesa/Receita - data"
+
+## [1.4.0] - 2026-04-07
+
+### Corrigido
+- Transações: tipo Transferência agora exibe campos "Conta origem" e "Conta destino" corretamente (antes mostrava apenas "Conta" sem destino)
+
+## [1.3.9] - 2026-04-07
+
+### Adicionado
+- Sidebar desktop: botão de colapsar/expandir — recolhe para somente ícones, estado persistido no localStorage
+
+## [1.3.8] - 2026-04-07
+
+### Adicionado
+- Fatura: listagem de pagamentos registrados com botão de estornar
+- API: `GET /credit-cards/:id/invoices/:invoiceId/payments` — lista pagamentos da fatura
+- API: `DELETE /credit-cards/:id/invoices/:invoiceId/payments/:paymentId` — estorna pagamento, cancela transação e ledger entries, recalcula status da fatura e re-bloqueia limite se necessário
+
 ## [1.3.7] - 2026-04-06
 
 ### Adicionado
