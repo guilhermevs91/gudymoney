@@ -154,6 +154,10 @@ export default function TransactionsPage() {
 
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
+  const [bulkCategoryDialog, setBulkCategoryDialog] = useState(false);
+  const [bulkCategoryId, setBulkCategoryId] = useState('');
+  const [bulkSaving, setBulkSaving] = useState(false);
+
   const loadSupporting = useCallback(async () => {
     const [accRes, cardRes, catRes] = await Promise.allSettled([
       api.get<{ data: Account[] }>('/accounts'),
@@ -456,6 +460,30 @@ export default function TransactionsPage() {
     }
   }
 
+  async function handleBulkCategorize(scope: 'none' | 'similar' | 'similar_and_rule') {
+    if (!bulkCategoryId || bulkCategoryId === '_none') return;
+    setBulkSaving(true);
+    try {
+      await Promise.all(
+        [...selectedIds].map((id) =>
+          api.patch(`/transactions/${id}/categorize`, {
+            category_id: bulkCategoryId,
+            apply_to_similar: scope,
+          })
+        )
+      );
+      toast({ title: `Categoria aplicada em ${selectedIds.size} lançamento(s)!` });
+      setBulkCategoryDialog(false);
+      setBulkCategoryId('');
+      setSelectedIds(new Set());
+      loadTransactions(filters);
+    } catch {
+      toast({ title: 'Erro ao aplicar categoria', variant: 'destructive' });
+    } finally {
+      setBulkSaving(false);
+    }
+  }
+
   function accountOrCardName(t: Transaction): string {
     if (t.credit_card) return t.credit_card.name;
     if (t.account) return t.account.name;
@@ -560,25 +588,30 @@ export default function TransactionsPage() {
           {/* Mobile summary bar */}
           <div className="md:hidden rounded-lg border bg-card p-3 mb-3">
             {selectedIds.size > 0 ? (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{selectedIds.size} selecionados</span>
-                <div className="flex gap-4">
-                  <div className="text-center">
-                    <p className="text-[10px] text-muted-foreground">Receitas</p>
-                    <p className="text-sm font-semibold text-green-500">{selectedIncome.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{selectedIds.size} selecionados</span>
+                  <div className="flex gap-4">
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground">Receitas</p>
+                      <p className="text-sm font-semibold text-green-500">{selectedIncome.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground">Despesas</p>
+                      <p className="text-sm font-semibold text-red-500">{selectedExpense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground">Saldo</p>
+                      <p className={cn('text-sm font-bold', (selectedIncome - selectedExpense) >= 0 ? 'text-green-500' : 'text-red-500')}>
+                        {(selectedIncome - selectedExpense).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-muted-foreground">Despesas</p>
-                    <p className="text-sm font-semibold text-red-500">{selectedExpense.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-muted-foreground">Saldo</p>
-                    <p className={cn('text-sm font-bold', (selectedIncome - selectedExpense) >= 0 ? 'text-green-500' : 'text-red-500')}>
-                      {(selectedIncome - selectedExpense).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </p>
-                  </div>
+                  <button className="text-xs text-muted-foreground underline shrink-0" onClick={() => setSelectedIds(new Set())}>Limpar</button>
                 </div>
-                <button className="text-xs text-muted-foreground underline shrink-0" onClick={() => setSelectedIds(new Set())}>Limpar</button>
+                <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => { setBulkCategoryId(''); setBulkCategoryDialog(true); }}>
+                  Alterar categorias
+                </Button>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-3">
@@ -640,6 +673,9 @@ export default function TransactionsPage() {
                         </p>
                       </div>
                     </div>
+                    <Button size="sm" variant="outline" className="w-full text-xs mt-1" onClick={() => { setBulkCategoryId(''); setBulkCategoryDialog(true); }}>
+                      Alterar categorias
+                    </Button>
                   </>
                 ) : (
                   <>
@@ -1142,6 +1178,76 @@ export default function TransactionsPage() {
               </div>
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk categorize dialog */}
+      <Dialog open={bulkCategoryDialog} onOpenChange={(o) => { if (!o) { setBulkCategoryDialog(false); setBulkCategoryId(''); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar categorias</DialogTitle>
+            <DialogDescription>
+              Selecione a categoria para aplicar nos {selectedIds.size} lançamento(s) selecionado(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-1">
+              <Label>Categoria</Label>
+              <Select value={bulkCategoryId || '_none'} onValueChange={(v) => setBulkCategoryId(v === '_none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Selecione...</SelectItem>
+                  {flatCategoryOptions(categories).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {bulkCategoryId && bulkCategoryId !== '_none' && (
+              <div className="flex flex-col gap-2 pt-1">
+                <p className="text-sm font-medium">Como aplicar?</p>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto py-3 px-4 w-full whitespace-normal text-left"
+                  disabled={bulkSaving}
+                  onClick={() => handleBulkCategorize('none')}
+                >
+                  <div className="text-left">
+                    <p className="font-medium">Somente os selecionados</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Aplica apenas nos {selectedIds.size} lançamentos marcados</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto py-3 px-4 w-full whitespace-normal text-left"
+                  disabled={bulkSaving}
+                  onClick={() => handleBulkCategorize('similar')}
+                >
+                  <div className="text-left">
+                    <p className="font-medium">Selecionados + todos com mesmo nome</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Aplica nos marcados e em todos os lançamentos com descrição igual</p>
+                  </div>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-auto py-3 px-4 w-full whitespace-normal text-left"
+                  disabled={bulkSaving}
+                  onClick={() => handleBulkCategorize('similar_and_rule')}
+                >
+                  <div className="text-left">
+                    <p className="font-medium">Selecionados + mesmos nomes + regra automática</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Aplica agora e salva regra para categorizar automaticamente futuros lançamentos</p>
+                  </div>
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBulkCategoryDialog(false); setBulkCategoryId(''); }} disabled={bulkSaving}>
+              Cancelar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

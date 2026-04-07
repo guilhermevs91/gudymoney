@@ -5,6 +5,12 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.7.0] - 2026-04-07
+
+### Adicionado
+- Transações: botão "Alterar categorias" aparece ao selecionar lançamentos — aplica a categoria escolhida em todos os selecionados de uma vez
+- Ao confirmar, exibe opções de escopo: somente selecionados / selecionados + mesmo nome / + regra automática futura
+
 ## [1.6.3] - 2026-04-07
 
 ### Corrigido

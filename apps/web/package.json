@@ -1,6 +1,6 @@
 {
   "name": "@gudy/web",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "private": true,
   "scripts": {
     "dev": "node -e \"require('fs').copyFileSync('../../CHANGELOG.md','public/changelog.txt')\" && next dev",
