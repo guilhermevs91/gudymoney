@@ -5,6 +5,11 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.7.1] - 2026-04-07
+
+### Corrigido
+- Captcha deslizante: arraste no mobile agora funciona sem rolar a página — implementado touch events nativos com `passive: false` + `touch-action: none` no thumb; thumb aumentado para 52px para facilitar o toque
+
 ## [1.7.0] - 2026-04-07
 
 ### Adicionado
