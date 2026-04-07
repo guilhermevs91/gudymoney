@@ -119,6 +119,103 @@ export async function getDashboardMetrics() {
 }
 
 // ---------------------------------------------------------------------------
+// Security logs
+// ---------------------------------------------------------------------------
+
+export async function getSecurityLogs(query: {
+  page?: number;
+  limit?: number;
+  action?: string;
+  ip_address?: string;
+  hours?: number;
+}) {
+  const page = query.page ?? 1;
+  const limit = Math.min(query.limit ?? 50, 200);
+  const skip = (page - 1) * limit;
+  const hours = query.hours ?? 24;
+
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+  const where: Record<string, unknown> = {
+    created_at: { gte: since },
+  };
+  if (query.action) where['action'] = query.action;
+  if (query.ip_address) where['ip_address'] = { contains: query.ip_address };
+
+  const [logs, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        created_at: true,
+        action: true,
+        entity_type: true,
+        entity_id: true,
+        ip_address: true,
+        user_agent: true,
+        tenant_id: true,
+        user_id: true,
+        after_data: true,
+      },
+    }),
+    prisma.auditLog.count({ where }),
+  ]);
+
+  // IPs com mais tentativas de login nas últimas `hours` horas
+  const loginAttempts = await prisma.auditLog.groupBy({
+    by: ['ip_address'],
+    where: {
+      action: 'LOGIN',
+      created_at: { gte: since },
+      ip_address: { not: null },
+    },
+    _count: { ip_address: true },
+    orderBy: { _count: { ip_address: 'desc' } },
+    take: 20,
+  });
+
+  // IPs com tentativas de login falhas (audit_logs de FAILED_LOGIN se existir, senão aproximação)
+  const failedLoginIps = await prisma.auditLog.groupBy({
+    by: ['ip_address'],
+    where: {
+      entity_type: 'users',
+      action: 'LOGIN',
+      created_at: { gte: since },
+      ip_address: { not: null },
+      after_data: { equals: null },
+    },
+    _count: { ip_address: true },
+    orderBy: { _count: { ip_address: 'desc' } },
+    take: 20,
+  });
+
+  return {
+    data: logs,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+    summary: {
+      period_hours: hours,
+      total_events: total,
+      top_ips_by_login: loginAttempts.map((r) => ({
+        ip: r.ip_address,
+        count: r._count.ip_address,
+      })),
+      suspicious_ips: failedLoginIps.map((r) => ({
+        ip: r.ip_address,
+        failed_logins: r._count.ip_address,
+      })),
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Tenants
 // ---------------------------------------------------------------------------
 

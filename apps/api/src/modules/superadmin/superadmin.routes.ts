@@ -34,6 +34,9 @@ router.get('/metrics', authenticateSuperAdmin, controller.getDashboardMetrics);
 /** GET /superadmin/platform-metrics */
 router.get('/platform-metrics', authenticateSuperAdmin, controller.getPlatformMetrics);
 
+/** GET /superadmin/security-logs */
+router.get('/security-logs', authenticateSuperAdmin, controller.getSecurityLogs);
+
 // ---------------------------------------------------------------------------
 // Tenant management
 // ---------------------------------------------------------------------------

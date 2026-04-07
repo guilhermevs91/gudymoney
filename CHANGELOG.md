@@ -10,6 +10,10 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 ### Adicionado
 - SuperAdmin: página de Logs de Segurança (`/superadmin/security`) com resumo de eventos, top IPs por login, IPs suspeitos, filtros por período/ação/IP e tabela paginada
 
+### Corrigido
+- CI: adicionado `timeout-minutes: 15` no job de testes para evitar runs travados indefinidamente
+- Testes: `forceExit: true` e `testTimeout: 30000` no jest para encerrar conexões pendentes
+
 ## [1.3.4] - 2026-04-06
 
 ### Adicionado

@@ -20,6 +20,8 @@ module.exports = {
   },
   testMatch: ['**/__tests__/**/*.test.ts', '**/src/tests/**/*.test.ts'],
   maxWorkers: 1,
+  testTimeout: 30000,
+  forceExit: true,
   setupFiles: ['dotenv/config'],
   setupFilesAfterEnv: ['./src/tests/setup.ts'],
   collectCoverageFrom: [

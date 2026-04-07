@@ -36,12 +36,21 @@ app.use(express.urlencoded({ extended: true }));
 // Rate limiting — relaxed in development, stricter in production
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env['NODE_ENV'] === 'production' ? 100 : 1000,
+  max: process.env['NODE_ENV'] === 'production' ? 500 : 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
 });
 app.use(limiter);
+
+// Rate limiting específico para rotas de autenticação (mais restrito)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env['NODE_ENV'] === 'production' ? 20 : 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.', code: 'RATE_LIMIT_EXCEEDED' },
+});
 
 // Health check
 app.get('/health', (_req: Request, res: Response) => {
@@ -51,7 +60,7 @@ app.get('/health', (_req: Request, res: Response) => {
 // ---------------------------------------------------------------------------
 // Module routes
 // ---------------------------------------------------------------------------
-app.use('/auth', authRouter);
+app.use('/auth', authLimiter, authRouter);
 app.use('/accounts', accountsRouter);
 app.use('/categories', categoriesRouter);
 app.use('/tags', tagsRouter);

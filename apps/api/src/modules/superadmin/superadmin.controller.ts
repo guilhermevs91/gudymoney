@@ -322,6 +322,29 @@ export async function deletePlanFeature(
 }
 
 /**
+ * GET /superadmin/security-logs
+ */
+export async function getSecurityLogs(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { page, limit, action, ip_address, hours } = req.query as Record<string, string>;
+    const result = await service.getSecurityLogs({
+      page: page ? parseInt(page) : undefined,
+      limit: limit ? parseInt(limit) : undefined,
+      action,
+      ip_address,
+      hours: hours ? parseInt(hours) : undefined,
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    handleError(err, res, next);
+  }
+}
+
+/**
  * GET /superadmin/platform-metrics
  */
 export async function getPlatformMetrics(
