@@ -108,7 +108,7 @@ export function QuickTransactionButton({ onCreated, centerFab = false }: QuickTr
     }
     const allCats = flatCategoryOptions(categories);
     const cat = allCats.find((c) => c.id === form.category_id);
-    if (cat) return `${cat.name} - ${date}`;
+    if (cat) return `${cat.label} - ${date}`;
     return `${form.type === 'INCOME' ? 'Receita' : 'Despesa'} - ${date}`;
   }
 
