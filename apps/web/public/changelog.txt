@@ -5,6 +5,183 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.3.2] - 2026-04-05
+
+### Corrigido
+- Dashboard: removido scroll horizontal no card de Orçamento (`overflow-x-hidden` no container interno)
+
+## [1.3.1] - 2026-04-05
+
+### Alterado
+- Orçamento: itens ordenados alfabeticamente pelo nome da categoria (locale pt-BR)
+
+### Corrigido
+- Orçamento: `calculateActualSpent` agora soma transações com status `REALIZADO` **e** `PREVISTO` — recorrências e lançamentos previstos com categoria passam a aparecer no valor realizado do orçamento
+- Orçamento: `getSuggestions` também considera transações `PREVISTO` ao sugerir categorias para auto-inserção
+
+## [1.3.0] - 2026-04-05
+
+### Alterado
+- Cartão de crédito: faturas agora ordenadas em ordem crescente (mais antigas à esquerda/topo → mais recentes à direita/baixo)
+- Ao entrar na tela, scroll automático até a fatura do mês atual (a que cobre hoje), centralizando-a na lista
+
+## [1.2.9] - 2026-04-05
+
+### Corrigido
+- Cartão de crédito: ao entrar na tela, a fatura selecionada agora é a que cobre a data de hoje (período_start ≤ hoje ≤ period_end), evitando selecionar faturas futuras de parcelas; fallback para fatura com vencimento mais próximo → OPEN → mais recente
+
+## [1.2.8] - 2026-04-05
+
+### Alterado
+- Cartão de crédito / fatura: botões editar e excluir da fatura agora sempre visíveis no mobile (antes apareciam só no hover, que não funciona em touch); no desktop mantém comportamento hover
+
+## [1.2.7] - 2026-04-05
+
+### Alterado
+- Cartão de crédito / detalhe: faturas já estavam ordenadas da mais recente para a mais antiga; ao entrar na tela agora seleciona automaticamente a fatura do mês corrente (prioridade 1), depois a OPEN (prioridade 2), depois a mais recente
+
+## [1.2.6] - 2026-04-05
+
+### Alterado
+- Cartão de crédito / detalhe: cards de resumo (Limite/Utilizado/Disponível) agora em 3 colunas no mobile com texto e padding compactos
+- Layout da página de detalhe: `flex-col` no mobile e grid no desktop para melhor empilhamento
+- Header e conteúdo da fatura com padding responsivo (`p-3 md:p-6`)
+
+## [1.2.5] - 2026-04-05
+
+### Corrigido
+- Cartão de crédito / fatura: layout mobile totalmente revisado — lista de faturas vira scroll horizontal no mobile (cards deslizáveis), header da fatura reorganizado com título/total em cima e botão Pagar ao lado, botões de ação (Lançamento, Parcelar, Conferir) em linha com quebra automática; lista de transações em cards com botões visíveis
+
+## [1.2.4] - 2026-04-05
+
+### Alterado
+- Cartão de crédito / fatura: layout mobile com cards por transação — descrição (com parcela colorida), data, categoria, valor em vermelho, badge de status e botões editar, confirmar e excluir; rodapé com total fixo na base da lista; tabela mantida no desktop
+
+## [1.2.3] - 2026-04-05
+
+### Alterado
+- Recorrências: layout mobile com cards — descrição, tipo, frequência, datas, conta, valor e botões Ativar/Desativar, editar e excluir visíveis por card
+- Categorias: layout mobile com cards — nome, cor, badge de tipo e uso, botões editar e excluir por card
+- Importações: layout mobile com cards — nome do arquivo, formato, linhas, conciliados, data, badge de status, botão excluir e botão "Ver Itens" em largura total
+
+## [1.2.2] - 2026-04-05
+
+### Alterado
+- Contas: layout mobile com lista de cards — cada card exibe nome, tipo, banco, moeda, badge de status, saldo realizado e botões de editar/excluir visíveis diretamente; tabela mantida no desktop
+
+## [1.2.1] - 2026-04-05
+
+### Alterado
+- Orçamento: layout mobile com lista de cards substituindo a tabela — cada card exibe nome da categoria com cor, badge de tipo, valor realizado / planejado, percentual e barra de progresso, com botões de editar e excluir visíveis diretamente no card
+
+## [1.2.0] - 2026-04-05
+
+### Adicionado
+- Transações: layout mobile com barra de resumo horizontal no topo (Receitas / Despesas / Saldo), lista de cards substituindo a tabela em telas pequenas, ações compactas por card
+- Transações: filtros reorganizados em grid 2 colunas no mobile
+
+### Corrigido
+- Orçamento: duplicação de categorias quando a mesma categoria possuía transações de RECEITA e DESPESA no mesmo mês — `getSuggestions` agora deduplica por `category_id`, mantendo apenas o tipo com maior valor realizado
+- Orçamento: deduplicação também aplicada no frontend antes de inserir sugestões
+
+## [1.1.1] - 2026-04-05
+
+### Alterado
+- Dashboard: quadro de orçamento com scroll interno (`max-h-300px`), ordenado do maior para o menor valor planejado
+- Dashboard: cada item do orçamento exibe nome, valor realizado / planejado e percentual na mesma linha, com barra de progresso fina abaixo — layout compacto e legível em mobile
+
+## [1.1.0] - 2026-04-05
+
+### Adicionado
+- Mobile: sidebar agora abre como drawer deslizante com backdrop ao clicar no botão hamburguer (≡) no topbar
+- Mobile: bottom nav fixa com 5 atalhos principais (Início, Transações, Contas, Cartões, Orçamento)
+- Mobile: drawer fecha automaticamente ao navegar para outra página ou clicar fora
+- Layout: padding inferior ajustado em mobile para não sobrepor a bottom nav
+
+## [1.0.5] - 2026-04-05
+
+### Adicionado
+- Dashboard: linha de Saldo Projetado (azul tracejada) no gráfico de projeção — acumula mês a mês partindo do saldo realizado atual (saldo anterior + receitas − despesas)
+
+## [1.0.4] - 2026-04-05
+
+### Adicionado
+- Dashboard: gráfico de projeção de gastos mostrando receitas e despesas do mês atual + próximos 5 meses (inclui lançamentos previstos e realizados, exclui cancelados)
+- API: endpoint `GET /transactions/projection?year=&month=` retorna totais agrupados por mês para os 6 meses a partir do período informado
+
+## [1.0.3] - 2026-04-05
+
+### Corrigido
+- Categorização em massa: ao usar "Todos os iguais" ou "Todos os iguais + salvar regra", a atualização agora aplica apenas a partir do mês da transação de referência — transações de meses anteriores nunca são alteradas retroativamente
+
+## [1.0.2] - 2026-04-05
+
+### Adicionado
+- Transações: filtro por Conta/Cartão — lista contas e cartões agrupados, filtra client-side sem nova requisição
+- Transações: filtro por Categoria — exibe todas as categorias do tenant
+
+## [1.0.1] - 2026-04-05
+
+### Adicionado
+- Orçamento: ao abrir o orçamento de um mês, categorias com lançamentos no período que ainda não estão no orçamento são inseridas automaticamente com valor planejado pendente (R$ 0,01 como placeholder)
+- Orçamento: ao editar o valor planejado de um item, aparece dialog perguntando "Replicar para outros meses?" com campo para informar quantos meses à frente aplicar (0 = somente este mês)
+- API: novo endpoint `GET /budgets/suggestions?year=&month=` retorna categorias com transações no mês que não estão no orçamento
+
+## [1.0.0] - 2026-04-05
+
+### Alterado
+- Versão ajustada para `1.0.0` para seguir a nova convenção de overflow: segmentos vão de 0 a 9, ao atingir 9 o segmento à esquerda é incrementado e os à direita zerados
+
+## [0.12.2] - 2026-04-05
+
+### Corrigido
+- Categorias: ao recriar uma categoria com mesmo nome e pai que foi soft-deletada anteriormente, o sistema restaura o registro existente com os novos atributos (cor, tipo, ícone) em vez de falhar com erro de constraint duplicada
+
+### Adicionado
+- Categorias: ao criar uma categoria sem informar cor, o sistema escolhe automaticamente uma cor da paleta que ainda não foi usada no tenant; se todas já foram usadas, recicla aleatoriamente
+- Categorias: subcategorias criadas sem cor herdam automaticamente a cor da categoria pai (tanto no backend quanto no formulário — ao selecionar o pai, a cor é preenchida automaticamente no campo)
+- Categorias: campo de cor mostra "automática" quando nenhuma cor foi escolhida — o backend decide a cor ideal
+
+### Corrigido
+- API: limite máximo de `pageSize` em transações aumentado de 100 para 2000, permitindo carregamento completo da listagem
+
+### Adicionado
+- Transações: ordenação por coluna (Data, Descrição, Valor, Status) com indicador asc/desc clicável no cabeçalho
+- Transações: coluna de checkbox para seleção individual e "selecionar todos"
+- Transações: painel de sumário lateral com total de receitas, despesas e saldo do mês visível; ao selecionar registros, exibe subtotal dos selecionados
+- Transações: paginação removida — todos os lançamentos são carregados de uma vez (até 2000)
+
+## [0.12.1] - 2026-04-05
+
+### Corrigido
+- Transações: lançamentos de cartão de crédito agora exibem os botões de editar e excluir na tela de transações, mesmo quando `is_reconciled = true` — o flag é apenas visual para cartão e não deve bloquear a edição
+
+## [0.12.0] - 2026-04-05
+
+### Adicionado
+- Inteligência de categorização automática: ao alterar a categoria de um lançamento, pergunta se deseja aplicar apenas neste, em todos os lançamentos com o mesmo nome, ou em todos + salvar regra automática
+- Regra de categorização (`category_rules`): ao salvar uma regra, novos lançamentos criados ou importados com o mesmo nome de descrição (sem sufixo de parcela) recebem a categoria automaticamente
+- O padrão é extraído removendo o sufixo `(X/Y)` da descrição — "NCOPAY (3/3)" e "NCOPAY (1/3)" compartilham a mesma regra "NCOPAY"
+
+## [0.11.4] - 2026-04-05
+
+### Adicionado
+- Transações recorrentes: ao editar um lançamento de recorrência, um dialog pergunta o escopo — "Somente este" ou "Este e os próximos"
+- Transações recorrentes: "Este e os próximos" propaga `amount`, `description`, `category_id` e `notes` para todas as ocorrências futuras (índice maior que o atual), sem afetar as passadas
+- Transações: `amount` agora pode ser alterado no update (antes era somente leitura após criação)
+
+## [0.11.3] - 2026-04-05
+
+### Corrigido
+- Cartão sem faturas: estado vazio agora exibe botões de "Lançamento" e "Parcelar" com mensagem orientativa — ao criar o lançamento, a primeira fatura é gerada automaticamente pelo backend
+
+## [0.11.2] - 2026-04-05
+
+### Corrigido
+- Listagem de cartões: `limit_used` e `limit_available` agora recalculados a partir das transações ativas das faturas abertas (não mais do valor desatualizado do banco)
+- Listagem de cartões: fatura exibida no card agora é a mais próxima a vencer (menor `due_date`) e não a mais recente por `period_start`
+- Listagem de cartões: `total_amount` da fatura exibida também recalculado a partir das transações
+
 ## [0.11.1] - 2026-04-04
 
 ### Corrigido

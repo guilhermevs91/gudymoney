@@ -172,12 +172,12 @@ export async function getSecurityLogs(query: {
       created_at: { gte: since },
       ip_address: { not: null },
     },
-    _count: { ip_address: true },
+    _count: { _all: true },
     orderBy: { _count: { ip_address: 'desc' } },
     take: 20,
   });
 
-  // IPs com tentativas de login falhas (audit_logs de FAILED_LOGIN se existir, senão aproximação)
+  // IPs com tentativas de login sem after_data (logins que falharam antes de gravar dados)
   const failedLoginIps = await prisma.auditLog.groupBy({
     by: ['ip_address'],
     where: {
@@ -185,9 +185,9 @@ export async function getSecurityLogs(query: {
       action: 'LOGIN',
       created_at: { gte: since },
       ip_address: { not: null },
-      after_data: { equals: null },
+      after_data: { equals: undefined },
     },
-    _count: { ip_address: true },
+    _count: { _all: true },
     orderBy: { _count: { ip_address: 'desc' } },
     take: 20,
   });
@@ -205,11 +205,11 @@ export async function getSecurityLogs(query: {
       total_events: total,
       top_ips_by_login: loginAttempts.map((r) => ({
         ip: r.ip_address,
-        count: r._count.ip_address,
+        count: r._count._all,
       })),
       suspicious_ips: failedLoginIps.map((r) => ({
         ip: r.ip_address,
-        failed_logins: r._count.ip_address,
+        failed_logins: r._count._all,
       })),
     },
   };

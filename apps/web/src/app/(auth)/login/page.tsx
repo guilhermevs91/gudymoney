@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '@/contexts/auth-context';
+import { superadminApi, setSuperAdminToken } from '@/lib/api';
+import { SlideCaptcha } from '@/components/shared/slide-captcha';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +25,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const { login, googleLogin } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -34,6 +37,18 @@ export default function LoginPage() {
       await login(email, password);
       router.replace('/dashboard');
     } catch (err) {
+      // Tenta login como superadmin antes de exibir erro
+      try {
+        const res = await superadminApi.post<{ data: { token: string } }>(
+          '/superadmin/auth/login',
+          { email, password },
+        );
+        setSuperAdminToken(res.data.token);
+        router.replace('/superadmin/metrics');
+        return;
+      } catch {
+        // não é superadmin — exibe erro original
+      }
       toast({
         variant: 'destructive',
         title: 'Erro ao entrar',
@@ -116,7 +131,8 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <SlideCaptcha onVerified={() => setCaptchaVerified(true)} />
+          <Button type="submit" className="w-full" disabled={loading || !captchaVerified}>
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>

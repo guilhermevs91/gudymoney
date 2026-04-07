@@ -5,6 +5,19 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.3.7] - 2026-04-06
+
+### Adicionado
+- Login: captcha de arrastar para verificar antes de habilitar o botão Entrar (proteção contra bots)
+
+### Corrigido
+- Mobile: menu lateral não abria porque `onMobileClose` era recriado a cada render, fechando o drawer imediatamente após abrir
+
+## [1.3.6] - 2026-04-06
+
+### Adicionado
+- Login: superadmin pode logar diretamente em `app.gudy.com.br/login` — se as credenciais não forem de usuário normal, tenta login como superadmin e redireciona para `/superadmin/metrics`
+
 ## [1.3.5] - 2026-04-06
 
 ### Adicionado

@@ -922,8 +922,11 @@ export const creditCardsService = {
       throw new NotFoundError('Cartão de crédito não encontrado.');
     }
 
+    // Cartões adicionais compartilham a conta interna do cartão pai
+    const principalCardId = card.parent_card_id ?? card.id;
+
     const internalAccount = await prisma.account.findFirst({
-      where: { credit_card_id: cardId, tenant_id: tenantId, deleted_at: null, type: 'INTERNAL' },
+      where: { credit_card_id: principalCardId, tenant_id: tenantId, deleted_at: null, type: 'INTERNAL' },
       select: { id: true },
     });
     if (internalAccount === null) {

@@ -1332,6 +1332,7 @@ export default function CreditCardDetailPage() {
                 type="date"
                 value={editInvoicePeriodStart}
                 onChange={(e) => setEditInvoicePeriodStart(e.target.value)}
+                max="2999-12-31"
               />
             </div>
             <div className="space-y-1.5">
@@ -1340,6 +1341,7 @@ export default function CreditCardDetailPage() {
                 type="date"
                 value={editInvoicePeriodEnd}
                 onChange={(e) => setEditInvoicePeriodEnd(e.target.value)}
+                max="2999-12-31"
               />
             </div>
             <div className="space-y-1.5">
@@ -1348,6 +1350,7 @@ export default function CreditCardDetailPage() {
                 type="date"
                 value={editInvoiceDueDate}
                 onChange={(e) => setEditInvoiceDueDate(e.target.value)}
+                max="2999-12-31"
               />
             </div>
           </div>

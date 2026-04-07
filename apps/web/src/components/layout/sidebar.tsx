@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -142,10 +142,12 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       .catch(() => setAppVersion('—'));
   }, []);
 
-  // Close drawer on route change
+  // Close drawer on route change (use ref to avoid closing on every render)
+  const onMobileCloseRef = useRef(onMobileClose);
+  useEffect(() => { onMobileCloseRef.current = onMobileClose; });
   useEffect(() => {
-    onMobileClose();
-  }, [pathname, onMobileClose]);
+    onMobileCloseRef.current();
+  }, [pathname]);
 
   return (
     <>
