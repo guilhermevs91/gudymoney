@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ArrowLeftRight, Plus, CreditCard, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, CreditCard, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { QuickTransactionButton } from '@/components/shared/quick-transaction-button';
 

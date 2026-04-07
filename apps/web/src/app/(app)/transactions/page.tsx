@@ -294,6 +294,7 @@ export default function TransactionsPage() {
       category_id: t.category_id ?? '',
       account_id: t.account_id ?? '',
       credit_card_id: t.credit_card_id ?? '',
+      target_account_id: '',
       notes: t.notes ?? '',
       pix_key: t.pix_key ?? '',
     });
