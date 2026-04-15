@@ -89,6 +89,7 @@ export default function CreditCardDetailPage() {
   const { toast } = useToast();
 
   const invoiceListRef = useRef<HTMLDivElement>(null);
+  const txListScrollRef = useRef<HTMLDivElement>(null);
   const [card, setCard] = useState<CreditCard | null>(null);
   const [invoices, setInvoices] = useState<CreditCardInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<CreditCardInvoice | null>(null);
@@ -311,7 +312,7 @@ export default function CreditCardDetailPage() {
     try {
       const created = await api.post<{ data: Transaction }>('/transactions', {
         type: 'EXPENSE',
-        status: 'PREVISTO',
+        status: 'REALIZADO',
         description: txDesc.trim(),
         amount: Number(txAmount),
         date: txDate,
@@ -373,10 +374,12 @@ export default function CreditCardDetailPage() {
   }
 
   async function handleConfirmTransaction(txId: string) {
+    const scrollY = window.scrollY;
     try {
       await api.patch(`/transactions/${txId}`, { status: 'REALIZADO' });
       toast({ title: 'Transação confirmada como realizada.' });
       if (selectedInvoice) await selectInvoice(selectedInvoice);
+      requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
     } catch {
       toast({ variant: 'destructive', title: 'Erro ao confirmar transação.' });
     }
@@ -1005,7 +1008,7 @@ export default function CreditCardDetailPage() {
 
       {/* Pay dialog */}
       <Dialog open={payDialog} onOpenChange={(o) => { if (!o) setPayDialog(false); }}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px]" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Pagar Fatura</DialogTitle>
             <DialogDescription>Registre o pagamento desta fatura.</DialogDescription>
@@ -1031,10 +1034,6 @@ export default function CreditCardDetailPage() {
               </div>
             )}
             <div className="space-y-1.5">
-              <Label>Valor pago (R$)</Label>
-              <CurrencyInput value={payAmount} onChange={(v) => setPayAmount(v)} />
-            </div>
-            <div className="space-y-1.5">
               <Label>Conta para débito</Label>
               <Select value={payAccountId || '_none'} onValueChange={(v) => setPayAccountId(v === '_none' ? '' : v)}>
                 <SelectTrigger>
@@ -1047,6 +1046,10 @@ export default function CreditCardDetailPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Valor pago (R$)</Label>
+              <CurrencyInput value={payAmount} onChange={(v) => setPayAmount(v)} />
             </div>
           </div>
           <DialogFooter>

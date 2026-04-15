@@ -5,6 +5,28 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.9.0] - 2026-04-14
+
+### Adicionado
+- Dashboard: saldo projetado agora desconta o valor das faturas abertas/fechadas não pagas dos cartões de crédito
+- CI/CD: versão do app (`package.json`) é injetada como `APP_VERSION` no build Docker e exibida corretamente na sidebar em produção
+
+### Corrigido
+- Mobile: zoom desativado via viewport (`maximum-scale=1, user-scalable=no`) — inputs não mais deslocam o layout
+- Toasts: duração reduzida de ~16min para 3s
+- Cartão de crédito: novas transações avulsas agora são criadas com status REALIZADO por padrão
+- Cartão de crédito: modal "Pagar Fatura" agora exibe primeiro a seleção de conta (sem abrir teclado automaticamente) e usa `onOpenAutoFocus` desabilitado
+- Cartão de crédito: confirmar realizado / reverter transação não mais retorna o scroll ao topo da página
+- Transações: confirmar realizado / reverter para previsto não mais retorna o scroll ao topo da página
+- Orçamento: botão "Salvar" no dialog de edição agora salva diretamente (sem abrir segundo dialog de replicação); opção "aplicar a meses futuros" disponível também ao editar
+- API: pagamento de fatura com cartão adicional — usa `internal_account_id` direto do cartão, eliminando erro "conta interna não encontrada"
+
+## [1.8.1] - 2026-04-14
+
+### Corrigido
+- API: pagamento de fatura não associa mais a transação de pagamento à fatura (`credit_card_invoice_id` removido), evitando que o lançamento apareça duplicado dentro da fatura
+- API: estorno de pagamento agora localiza a transação por conta + valor + data, sem depender de `credit_card_invoice_id`
+
 ## [1.8.0] - 2026-04-07
 
 ### Adicionado

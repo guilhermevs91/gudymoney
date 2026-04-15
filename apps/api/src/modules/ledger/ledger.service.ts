@@ -202,9 +202,31 @@ export const ledgerService = {
       if (tx.type === 'EXPENSE') expenseProjected = expenseProjected.add(tx.amount);
     }
 
+    // Deduct unpaid invoice balances from total_projected.
+    // Invoices with status OPEN or CLOSED (but not PAID) represent money owed
+    // that is not yet reflected in account ledger entries.
+    const unpaidInvoices = await prisma.creditCardInvoice.findMany({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: null,
+        status: { in: ['OPEN', 'CLOSED'] },
+      },
+      select: { total_amount: true, total_paid: true },
+    });
+
+    let pendingInvoiceTotal = new Prisma.Decimal(0);
+    for (const inv of unpaidInvoices) {
+      const outstanding = new Prisma.Decimal(inv.total_amount ?? 0).sub(
+        new Prisma.Decimal(inv.total_paid ?? 0),
+      );
+      if (outstanding.gt(0)) {
+        pendingInvoiceTotal = pendingInvoiceTotal.add(outstanding);
+      }
+    }
+
     return {
       total_realized: totalRealized,
-      total_projected: totalProjected,
+      total_projected: totalProjected.sub(pendingInvoiceTotal),
       income_this_month: incomeThisMonth,
       expense_this_month: expenseThisMonth,
       income_projected: incomeProjected,

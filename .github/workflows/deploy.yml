@@ -44,6 +44,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Extract web version
+        id: web_version
+        run: echo "version=$(node -p "require('./apps/web/package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Web image
         uses: docker/build-push-action@v5
         with:
@@ -56,6 +60,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+            APP_VERSION=${{ steps.web_version.outputs.version }}
           no-cache: true
 
   deploy:

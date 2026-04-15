@@ -436,11 +436,13 @@ export default function TransactionsPage() {
   }
 
   async function handleConfirmRealizado(id: string) {
+    const scrollY = window.scrollY;
     setConfirmingId(id);
     try {
       await api.patch(`/transactions/${id}`, { status: 'REALIZADO' });
       toast({ title: 'Transação confirmada como realizada' });
       loadTransactions(filters);
+      requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
     } catch {
       toast({ title: 'Erro ao confirmar transação', variant: 'destructive' });
     } finally {
@@ -449,11 +451,13 @@ export default function TransactionsPage() {
   }
 
   async function handleRevertPrevisto(id: string) {
+    const scrollY = window.scrollY;
     setConfirmingId(id);
     try {
       await api.patch(`/transactions/${id}`, { status: 'PREVISTO' });
       toast({ title: 'Transação revertida para previsto' });
       loadTransactions(filters);
+      requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }));
     } catch {
       toast({ title: 'Erro ao reverter transação', variant: 'destructive' });
     } finally {

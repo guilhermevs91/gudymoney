@@ -285,11 +285,9 @@ export default function BudgetsPage() {
       return;
     }
 
-    // Ao editar, abre dialog de replicação
+    // Ao editar: salva diretamente (sem abrir dialog extra)
     if (editingItem) {
-      setPendingEditPayload({ planned: Number(itemPlanned) });
-      setItemDialogOpen(false);
-      setReplicateDialogOpen(true);
+      await executeSaveItem(applyToFuture);
       return;
     }
 
@@ -643,20 +641,18 @@ export default function BudgetsPage() {
               />
             </div>
 
-            {!editingItem && (
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  id="apply-to-future"
-                  type="checkbox"
-                  checked={applyToFuture}
-                  onChange={(e) => setApplyToFuture(e.target.checked)}
-                  className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
-                />
-                <Label htmlFor="apply-to-future" className="cursor-pointer font-normal text-sm">
-                  Adicionar aos próximos meses
-                </Label>
-              </div>
-            )}
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                id="apply-to-future"
+                type="checkbox"
+                checked={applyToFuture}
+                onChange={(e) => setApplyToFuture(e.target.checked)}
+                className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+              />
+              <Label htmlFor="apply-to-future" className="cursor-pointer font-normal text-sm">
+                {editingItem ? 'Aplicar valor aos próximos meses' : 'Adicionar aos próximos meses'}
+              </Label>
+            </div>
           </div>
 
           <DialogFooter>

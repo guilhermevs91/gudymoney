@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 export const dynamic = 'force-dynamic';
 
 export function GET() {
-  const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'));
-  return NextResponse.json({ version: pkg.version as string });
+  // In production Docker (standalone), package.json is not present.
+  // Version is injected as APP_VERSION env var at build time.
+  let version = process.env.APP_VERSION;
+
+  if (!version) {
+    try {
+      const { readFileSync } = require('fs');
+      const { join } = require('path');
+      const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'));
+      version = pkg.version as string;
+    } catch {
+      version = '—';
+    }
+  }
+
+  return NextResponse.json({ version });
 }
