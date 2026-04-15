@@ -5,6 +5,12 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.8.1] - 2026-04-14
+
+### Corrigido
+- API: pagamento de fatura não associa mais a transação de pagamento à fatura (`credit_card_invoice_id` removido), evitando que o lançamento apareça duplicado dentro da fatura
+- API: estorno de pagamento agora localiza a transação por conta + valor + data, sem depender de `credit_card_invoice_id`
+
 ## [1.8.0] - 2026-04-07
 
 ### Adicionado

@@ -961,6 +961,7 @@ export const creditCardsService = {
       );
 
       // 4c. Create a parent transaction for the payment (to anchor ledger entries)
+      // Nota: NÃO associar credit_card_invoice_id para não aparecer como lançamento da fatura
       const paymentTransaction = await tx.transaction.create({
         data: {
           tenant_id: tenantId,
@@ -971,8 +972,6 @@ export const creditCardsService = {
           description: `Pagamento de fatura`,
           date: paidAt,
           account_id: data.account_id,
-          credit_card_id: cardId,
-          credit_card_invoice_id: invoiceId,
           notes: data.notes ?? null,
           is_reconciled: false,
         },
@@ -1079,14 +1078,15 @@ export const creditCardsService = {
       throw new NotFoundError('Pagamento não encontrado.');
     }
 
-    // 3. Find the transaction linked to this payment (by invoice + account + amount + description)
+    // 3. Find the transaction linked to this payment (by account + amount + description + date)
+    // Nota: credit_card_invoice_id não é mais usado na transação de pagamento
     const paymentTransaction = await prisma.transaction.findFirst({
       where: {
         tenant_id: tenantId,
-        credit_card_invoice_id: invoiceId,
         account_id: payment.account_id,
         amount: payment.amount,
         description: 'Pagamento de fatura',
+        date: payment.paid_at,
         status: { not: 'CANCELADO' },
       },
       orderBy: { created_at: 'desc' },
