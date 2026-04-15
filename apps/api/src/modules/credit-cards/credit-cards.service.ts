@@ -1095,7 +1095,7 @@ export const creditCardsService = {
     const card = await creditCardsRepository.findById(cardId, tenantId);
     if (card === null) throw new NotFoundError('Cartão não encontrado.');
     if (!card.internal_account_id) throw new ValidationError('Conta interna do cartão não encontrada.');
-    const internalAccount = { id: card.internal_account_id };
+    const _internalAccount = { id: card.internal_account_id };
 
     let updatedInvoice: CreditCardInvoice;
 
