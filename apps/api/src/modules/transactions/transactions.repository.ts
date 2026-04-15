@@ -85,7 +85,12 @@ export const transactionsRepository = {
     if (type !== undefined) where.type = type;
     if (status !== undefined) where.status = status;
     if (account_id !== undefined) where.account_id = account_id;
-    if (credit_card_id !== undefined) where.credit_card_id = credit_card_id;
+    if (credit_card_id !== undefined) {
+      where.credit_card_id = credit_card_id;
+    } else {
+      // Exclude credit card expense entries (they belong to invoices, not the general ledger)
+      where.credit_card_id = null;
+    }
     if (category_id !== undefined) where.category_id = category_id;
     if (is_reconciled !== undefined) where.is_reconciled = is_reconciled;
     if (credit_card_invoice_id !== undefined) where.credit_card_invoice_id = credit_card_invoice_id;

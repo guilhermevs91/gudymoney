@@ -102,7 +102,11 @@ export default function CreditCardDetailPage() {
   const [payDialog, setPayDialog] = useState(false);
   const [payAmount, setPayAmount] = useState('');
   const [payAccountId, setPayAccountId] = useState('');
+  const [payAlsoChildren, setPayAlsoChildren] = useState(false);
   const [paying, setPaying] = useState(false);
+
+  // Delete transaction confirmation
+  const [deleteTxId, setDeleteTxId] = useState<string | null>(null);
 
   // Invoice payments list
   const [invoicePayments, setInvoicePayments] = useState<InvoicePayment[]>([]);
@@ -277,15 +281,47 @@ export default function CreditCardDetailPage() {
     }
     setPaying(true);
     try {
+      const paidAt = new Date().toISOString();
+      const amount = parseFloat(payAmount);
+
+      // Pay the principal invoice
       await api.post(`/credit-cards/${id}/invoices/${selectedInvoice.id}/pay`, {
-        amount: parseFloat(payAmount),
+        amount,
         account_id: payAccountId,
-        paid_at: new Date().toISOString(),
+        paid_at: paidAt,
       });
+
+      // If user opted to also pay child card invoices, pay each one
+      const currentChildCards = card?.child_cards ?? [];
+      if (payAlsoChildren && currentChildCards.length > 0) {
+        await Promise.allSettled(
+          currentChildCards.map(async (child) => {
+            const childInvoicesRes = await api.get<{ data: { id: string; status: string; total_amount: number; total_paid: number }[] }>(
+              `/credit-cards/${child.id}/invoices`
+            );
+            const openInvoices = childInvoicesRes.data.filter(
+              (inv) => ['OPEN', 'PARTIAL', 'CLOSED'].includes(inv.status)
+            );
+            await Promise.allSettled(
+              openInvoices.map((inv) => {
+                const outstanding = Number(inv.total_amount) - Number(inv.total_paid);
+                if (outstanding <= 0) return Promise.resolve();
+                return api.post(`/credit-cards/${child.id}/invoices/${inv.id}/pay`, {
+                  amount: outstanding,
+                  account_id: payAccountId,
+                  paid_at: paidAt,
+                });
+              })
+            );
+          })
+        );
+      }
+
       toast({ title: 'Pagamento registrado!' });
       setPayDialog(false);
       setPayAmount('');
       setPayAccountId('');
+      setPayAlsoChildren(false);
       await loadCard();
       await loadInvoicePayments(selectedInvoice.id);
       const sorted = await loadInvoices();
@@ -385,9 +421,15 @@ export default function CreditCardDetailPage() {
   }
 
   async function handleDeleteTransaction(txId: string) {
+    setDeleteTxId(txId);
+  }
+
+  async function confirmDeleteTransaction() {
+    if (!deleteTxId) return;
     try {
-      await api.delete(`/transactions/${txId}`);
+      await api.delete(`/transactions/${deleteTxId}`);
       toast({ title: 'Transação removida.' });
+      setDeleteTxId(null);
       await loadCard();
       const sorted = await loadInvoices();
       const updated = sorted.find((i) => i.id === selectedInvoice?.id);
@@ -1050,12 +1092,40 @@ export default function CreditCardDetailPage() {
               <Label>Valor pago (R$)</Label>
               <CurrencyInput value={payAmount} onChange={(v) => setPayAmount(v)} />
             </div>
+            {childCards.length > 0 && (
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="pay-also-children"
+                  type="checkbox"
+                  checked={payAlsoChildren}
+                  onChange={(e) => setPayAlsoChildren(e.target.checked)}
+                  className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                />
+                <Label htmlFor="pay-also-children" className="cursor-pointer font-normal text-sm">
+                  Baixar também as faturas dos cartões adicionais
+                </Label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayDialog(false)} disabled={paying}>Cancelar</Button>
             <Button onClick={handlePay} disabled={paying || !payAmount || !payAccountId}>
               {paying ? 'Salvando...' : 'Confirmar'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete transaction confirmation dialog */}
+      <Dialog open={!!deleteTxId} onOpenChange={(o) => { if (!o) setDeleteTxId(null); }}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>Excluir lançamento</DialogTitle>
+            <DialogDescription>Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTxId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmDeleteTransaction}>Excluir</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

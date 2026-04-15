@@ -5,6 +5,16 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.9.1] - 2026-04-15
+
+### Adicionado
+- Cartão de crédito: ao pagar fatura do cartão pai, opção para baixar também as faturas abertas dos cartões adicionais
+
+### Corrigido
+- API: estorno de pagamento de fatura agora usa `internal_account_id` direto do cartão, eliminando erro "conta interna não encontrada"
+- Cartão de crédito: excluir lançamento agora abre modal de confirmação antes de deletar
+- Transações: lançamentos de cartão de crédito (despesas de fatura) não aparecem mais na tela de transações — apenas os pagamentos de fatura são exibidos
+
 ## [1.9.0] - 2026-04-14
 
 ### Adicionado

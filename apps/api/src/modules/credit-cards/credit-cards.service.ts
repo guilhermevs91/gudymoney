@@ -1094,12 +1094,8 @@ export const creditCardsService = {
     // 4. Get card and internal account
     const card = await creditCardsRepository.findById(cardId, tenantId);
     if (card === null) throw new NotFoundError('Cartão não encontrado.');
-    const principalCardId = card.parent_card_id ?? card.id;
-    const internalAccount = await prisma.account.findFirst({
-      where: { credit_card_id: principalCardId, tenant_id: tenantId, deleted_at: null, type: 'INTERNAL' },
-      select: { id: true },
-    });
-    if (internalAccount === null) throw new ValidationError('Conta interna do cartão não encontrada.');
+    if (!card.internal_account_id) throw new ValidationError('Conta interna do cartão não encontrada.');
+    const internalAccount = { id: card.internal_account_id };
 
     let updatedInvoice: CreditCardInvoice;
 
