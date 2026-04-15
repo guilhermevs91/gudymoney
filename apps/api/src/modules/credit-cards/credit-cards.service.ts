@@ -1136,6 +1136,7 @@ export const creditCardsService = {
 
       // 5d. Re-block limit if invoice was previously PAID
       if (wasFullyPaid) {
+        const principalCardId = card.parent_card_id ?? card.id;
         await creditCardsRepository.blockLimit(principalCardId, tenantId, invoice.total_amount, tx);
       }
 
