@@ -89,7 +89,6 @@ export default function CreditCardDetailPage() {
   const { toast } = useToast();
 
   const invoiceListRef = useRef<HTMLDivElement>(null);
-  const txListScrollRef = useRef<HTMLDivElement>(null);
   const [card, setCard] = useState<CreditCard | null>(null);
   const [invoices, setInvoices] = useState<CreditCardInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<CreditCardInvoice | null>(null);
