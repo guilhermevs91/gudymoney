@@ -9,6 +9,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Corrigido
 - Importação de fatura: parcelas (ex: "PRODUTO 3/6") agora retroagem corretamente para a data real da parcela 1 e ignoram as parcelas já passadas — apenas as parcelas atuais e futuras são criadas
+- Cartão de crédito: bloqueado adicionar, editar ou excluir lançamentos em faturas já pagas — é necessário estornar o pagamento primeiro
 
 ## [1.9.1] - 2026-04-15
 

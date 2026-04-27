@@ -285,6 +285,17 @@ export const transactionsService = {
         );
       }
 
+      // Block creation on paid invoices
+      if (resolvedInvoiceId !== null) {
+        const inv = await tx.creditCardInvoice.findUnique({
+          where: { id: resolvedInvoiceId },
+          select: { status: true },
+        });
+        if (inv?.status === 'PAID') {
+          throw new ValidationError('Não é possível adicionar lançamentos em uma fatura já paga.');
+        }
+      }
+
       // Auto-apply category rule if no category was provided
       let resolvedCategoryId = category_id ?? null;
       if (resolvedCategoryId === null) {
@@ -401,6 +412,17 @@ export const transactionsService = {
     const existing = await transactionsRepository.findById(id, tenantId);
     if (existing === null) {
       throw new NotFoundError('Transação não encontrada.');
+    }
+
+    // Block edits on transactions belonging to a paid invoice
+    if (existing.credit_card_invoice_id !== null) {
+      const inv = await prisma.creditCardInvoice.findUnique({
+        where: { id: existing.credit_card_invoice_id },
+        select: { status: true },
+      });
+      if (inv?.status === 'PAID') {
+        throw new ValidationError('Não é possível alterar lançamentos de uma fatura já paga. Estorne o pagamento primeiro.');
+      }
     }
 
     // Reconciled transactions on bank accounts (non-card) can only be cancelled or have
@@ -567,6 +589,17 @@ export const transactionsService = {
       throw new ForbiddenError(
         'Transação conciliada não pode ser excluída. Desconcilie primeiro.',
       );
+    }
+
+    // Block deletion on paid invoices
+    if (existing.credit_card_invoice_id !== null) {
+      const inv = await prisma.creditCardInvoice.findUnique({
+        where: { id: existing.credit_card_invoice_id },
+        select: { status: true },
+      });
+      if (inv?.status === 'PAID') {
+        throw new ValidationError('Não é possível excluir lançamentos de uma fatura já paga. Estorne o pagamento primeiro.');
+      }
     }
 
     await prisma.$transaction(async (tx) => {

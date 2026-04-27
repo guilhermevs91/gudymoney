@@ -1277,6 +1277,13 @@ export const creditCardsService = {
           tx,
         );
 
+        if (invoice.status === 'PAID') {
+          const mes = invoice.period_start.toISOString().substring(0, 7);
+          throw new ValidationError(
+            `A parcela ${i}/${n} cairia em uma fatura já paga (${mes}). Estorne o pagamento desta fatura antes de continuar.`,
+          );
+        }
+
         // Create individual transaction (EXPENSE, PREVISTO)
         const itemTransaction = await tx.transaction.create({
           data: {
