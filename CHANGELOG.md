@@ -5,6 +5,11 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.9.2] - 2026-04-27
+
+### Corrigido
+- Importação de fatura: parcelas (ex: "PRODUTO 3/6") agora retroagem corretamente para a data real da parcela 1 e ignoram as parcelas já passadas — apenas as parcelas atuais e futuras são criadas
+
 ## [1.9.1] - 2026-04-15
 
 ### Adicionado

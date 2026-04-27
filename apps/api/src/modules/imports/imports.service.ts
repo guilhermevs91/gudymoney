@@ -907,8 +907,13 @@ export const importsService = {
             const descBase = txn.description;
             const totalAmount = new Prisma.Decimal(txn.amount_brl).mul(instTotal);
 
-            // firstInstDate = the imported date (purchase date = parcela 1)
-            const firstInstDate = txn.date;
+            // The imported date is the date of parcel instIndex.
+            // Back-calculate parcel 1 date so the full sequence is correct.
+            const firstInstDate = new Date(Date.UTC(
+              txn.date.getUTCFullYear(),
+              txn.date.getUTCMonth() - (instIndex - 1),
+              txn.date.getUTCDate(),
+            ));
 
             // Dedup: check if the specific installment transaction (parcela instIndex) already exists
             const existingInstallment = await prisma.transaction.findFirst({
@@ -931,6 +936,9 @@ export const importsService = {
               // Individual installment amount (equal split; last gets remainder)
               const baseAmt = new Prisma.Decimal(txn.amount_brl); // each parcel = value from extract
               const remainder = totalAmount.sub(baseAmt.mul(instTotal)); // should be 0 for equal splits
+
+              // Only create parcels from instIndex onwards (past ones already happened)
+              const today = new Date();
 
               await prisma.$transaction(async (tx) => {
                 // Parent transaction — anchor for the Installment record only.
@@ -962,8 +970,8 @@ export const importsService = {
                   },
                 });
 
-                // Create all N installment transactions
-                for (let i = 1; i <= instTotal; i++) {
+                // Create installment transactions starting from instIndex (skip past ones)
+                for (let i = instIndex; i <= instTotal; i++) {
                   const instAmount = i === instTotal
                     ? baseAmt.add(remainder)
                     : baseAmt;
@@ -976,7 +984,6 @@ export const importsService = {
                   ));
 
                   // Parcelas cuja data já passou (≤ hoje) = REALIZADO, futuras = PREVISTO
-                  const today = new Date();
                   const instStatus = instDate <= today ? 'REALIZADO' : 'PREVISTO';
 
                   const invoice = await creditCardsRepository.findOrCreateInvoice(
