@@ -1202,6 +1202,46 @@ export const creditCardsService = {
   },
 
   // -------------------------------------------------------------------------
+  // Reopen invoice (CLOSED → OPEN)
+  // -------------------------------------------------------------------------
+
+  async reopenInvoice(
+    cardId: string,
+    invoiceId: string,
+    tenantId: string,
+    userId: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const invoice = await creditCardsRepository.findInvoiceById(invoiceId, tenantId);
+    if (invoice === null || invoice.credit_card_id !== cardId) {
+      throw new NotFoundError('Fatura não encontrada.');
+    }
+    if (invoice.status !== 'CLOSED') {
+      throw new ValidationError('Apenas faturas fechadas podem ser reabertas.');
+    }
+
+    const updated = await prisma.creditCardInvoice.update({
+      where: { id: invoiceId },
+      data: { status: 'OPEN', updated_at: new Date() },
+    });
+
+    await createAuditLog({
+      prisma: prisma as unknown as PrismaClient,
+      tenantId,
+      userId,
+      entityType: 'CreditCardInvoice',
+      entityId: invoiceId,
+      action: 'UPDATE',
+      afterData: { status: 'OPEN' },
+      ipAddress,
+      userAgent,
+    });
+
+    return { data: updated };
+  },
+
+  // -------------------------------------------------------------------------
   // Create installment purchase
   // -------------------------------------------------------------------------
 

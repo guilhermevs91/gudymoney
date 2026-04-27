@@ -5,6 +5,11 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.9.4] - 2026-04-27
+
+### Adicionado
+- Cartão de crédito: botão "Reabrir Fatura" — volta status de CLOSED para OPEN, permitindo novos lançamentos
+
 ## [1.9.3] - 2026-04-27
 
 ### Adicionado

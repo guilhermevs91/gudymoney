@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Plus, CreditCard as CreditCardIcon, CheckCircle, Trash2, Pencil, ClipboardCheck, RotateCcw, Lock } from 'lucide-react';
+import { ArrowLeft, Plus, CreditCard as CreditCardIcon, CheckCircle, Trash2, Pencil, ClipboardCheck, RotateCcw, Lock, LockOpen } from 'lucide-react';
 import type { Account, Category, CreditCard, CreditCardInvoice, Transaction } from '@/types';
 
 interface InvoicePayment {
@@ -556,6 +556,18 @@ export default function CreditCardDetailPage() {
     }
   }
 
+  async function handleReopenInvoice() {
+    if (!selectedInvoice) return;
+    try {
+      const res = await api.post<{ data: CreditCardInvoice }>(`/credit-cards/${id}/invoices/${selectedInvoice.id}/reopen`, {});
+      setSelectedInvoice(res.data);
+      setInvoices((prev) => prev.map((inv) => (inv.id === res.data.id ? res.data : inv)));
+      toast({ title: 'Fatura reaberta com sucesso.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao reabrir fatura.', description: err instanceof Error ? err.message : undefined });
+    }
+  }
+
   async function handleDeleteInvoice() {
     if (!selectedInvoice) return;
     setDeletingInvoice(true);
@@ -790,6 +802,16 @@ export default function CreditCardDetailPage() {
                         >
                           <Lock className="h-4 w-4 mr-1" />
                           Fechar Fatura
+                        </Button>
+                      )}
+                      {selectedInvoice.status === 'CLOSED' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleReopenInvoice}
+                        >
+                          <LockOpen className="h-4 w-4 mr-1" />
+                          Reabrir Fatura
                         </Button>
                       )}
                       {['OPEN', 'CLOSED', 'PARTIAL'].includes(selectedInvoice.status) && (

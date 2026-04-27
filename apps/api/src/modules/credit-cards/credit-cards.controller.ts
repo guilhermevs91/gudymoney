@@ -294,6 +294,29 @@ export const creditCardsController = {
   },
 
   // -------------------------------------------------------------------------
+  // POST /credit-cards/:id/invoices/:invoiceId/reopen
+  // -------------------------------------------------------------------------
+
+  async reopenInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tenantId = req.tenant!.id;
+      const userId = req.user!.userId;
+      const { id, invoiceId } = req.params as Record<string, string>;
+      const result = await creditCardsService.reopenInvoice(
+        id,
+        invoiceId,
+        tenantId,
+        userId,
+        req.ip ?? undefined,
+        req.headers['user-agent'] ?? undefined,
+      );
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // -------------------------------------------------------------------------
   // POST /credit-cards/installments
   // -------------------------------------------------------------------------
 

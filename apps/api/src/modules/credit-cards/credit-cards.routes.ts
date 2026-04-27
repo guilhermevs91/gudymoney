@@ -150,4 +150,12 @@ router.post(
   creditCardsController.closeInvoice,
 );
 
+// POST /credit-cards/:id/invoices/:invoiceId/reopen
+router.post(
+  '/:id/invoices/:invoiceId/reopen',
+  authenticateUser,
+  requireTenantAccess,
+  creditCardsController.reopenInvoice,
+);
+
 export default router;
