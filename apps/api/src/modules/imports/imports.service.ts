@@ -892,6 +892,13 @@ export const importsService = {
       if (card === null) continue;
       const principalCardId = card.parent_card_id ?? creditCardId;
 
+      // When Bradesco lists multiple parcels of the same purchase in the same
+      // invoice (e.g. 3/6, 4/6, 5/6, 6/6 all appear as separate lines), we only
+      // need to process the one with the lowest instIndex — it will generate all
+      // the remaining parcels. Mark the higher-index duplicates as IGNORED so we
+      // don't create multiple Installment groups for the same purchase.
+      const seenInstallmentKey = new Set<string>();
+
       for (const txn of section.transactions) {
         const instIndex = txn.installment_index;
         const instTotal = txn.installment_total;
@@ -906,6 +913,24 @@ export const importsService = {
             // ----------------------------------------------------------------
             const descBase = txn.description;
             const totalAmount = new Prisma.Decimal(txn.amount_brl).mul(instTotal);
+
+            // Bradesco lists every open parcel as a separate line (3/6, 4/6, 5/6, 6/6).
+            // We group by "description + total" and only process the lowest instIndex —
+            // that one generates all remaining parcels. Skip the rest to avoid duplicates.
+            const instGroupKey = `${descBase}__${instTotal}__${txn.amount_brl}`;
+            if (seenInstallmentKey.has(instGroupKey)) {
+              importItemsToCreate.push({
+                tenant_id: tenantId,
+                import_id: importRecord.id,
+                date: txn.date,
+                amount: txn.amount_brl,
+                description: `${descBase} (${instIndex}/${instTotal})`,
+                status: 'IGNORED',
+                raw_data: { card: section.last_four, action: 'duplicate_parcel_in_statement' },
+              });
+              continue;
+            }
+            seenInstallmentKey.add(instGroupKey);
 
             // The imported date is the date of parcel instIndex.
             // Back-calculate parcel 1 date so the full sequence is correct.
