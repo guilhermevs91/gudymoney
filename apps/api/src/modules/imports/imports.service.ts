@@ -1023,6 +1023,11 @@ export const importsService = {
                     creditCardId, tenantId, instDate, tx,
                   );
 
+                  // Skip parcelas que cairiam em fatura já fechada ou paga
+                  if (invoice.status === 'PAID' || invoice.status === 'CLOSED') {
+                    continue;
+                  }
+
                   const instCategoryId = await findCategoryRule(tenantId, descBase);
 
                   const itemTx = await tx.transaction.create({
@@ -1120,6 +1125,12 @@ export const importsService = {
                 creditCardId, tenantId, txn.date, tx,
               );
               const invoiceId = invoice.id;
+
+              // Não inserir em fatura já fechada ou paga
+              if (invoice.status === 'PAID' || invoice.status === 'CLOSED') {
+                itemAction = 'duplicate'; // marca como ignorado
+                return;
+              }
 
               if (duplicate !== null) {
                 if (duplicate.credit_card_invoice_id !== invoiceId) {

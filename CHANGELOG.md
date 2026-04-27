@@ -12,6 +12,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Corrigido
 - Importação Bradesco: quando o extrato lista múltiplas parcelas do mesmo produto na mesma fatura (ex: 3/6, 4/6, 5/6, 6/6 como linhas separadas), agora processa apenas a de menor índice e ignora as demais — evitando criação de múltiplos grupos de parcelamento duplicados
+- Importação: lançamentos e parcelas que cairiam em faturas CLOSED ou PAID são ignorados silenciosamente durante a importação
 
 ## [1.9.3] - 2026-04-27
 
