@@ -13,6 +13,9 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 ### Alterado
 - API: faturas com status CLOSED agora bloqueiam criação, edição e exclusão de lançamentos (anteriormente apenas PAID bloqueava)
 
+### Corrigido
+- Importação de fatura: dedup de parcelas e transações simples agora usa janela de ±1 dia na data para absorver diferenças de fuso (UTC vs horário local), evitando duplicação de lançamentos já cadastrados manualmente
+
 ## [1.9.2] - 2026-04-27
 
 ### Corrigido

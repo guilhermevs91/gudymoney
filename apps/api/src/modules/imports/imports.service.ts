@@ -915,12 +915,20 @@ export const importsService = {
               txn.date.getUTCDate(),
             ));
 
-            // Dedup: check if the specific installment transaction (parcela instIndex) already exists
+            // Dedup: check if the specific installment transaction (parcela instIndex) already exists.
+            // Use a ±1-day window on the date to absorb UTC vs local-time differences between
+            // manually created installments (local Date) and imported ones (UTC midnight).
+            const dedupDateFrom = new Date(Date.UTC(
+              txn.date.getUTCFullYear(), txn.date.getUTCMonth(), txn.date.getUTCDate() - 1,
+            ));
+            const dedupDateTo = new Date(Date.UTC(
+              txn.date.getUTCFullYear(), txn.date.getUTCMonth(), txn.date.getUTCDate() + 1,
+            ));
             const existingInstallment = await prisma.transaction.findFirst({
               where: {
                 tenant_id: tenantId,
                 credit_card_id: creditCardId,
-                date: txn.date,
+                date: { gte: dedupDateFrom, lte: dedupDateTo },
                 amount: new Prisma.Decimal(txn.amount_brl),
                 description: `${descBase} (${instIndex}/${instTotal})`,
                 deleted_at: null,
@@ -1062,11 +1070,17 @@ export const importsService = {
               description += ` (${instIndex}/${instTotal})`;
             }
 
+            const dupDateFrom = new Date(Date.UTC(
+              txn.date.getUTCFullYear(), txn.date.getUTCMonth(), txn.date.getUTCDate() - 1,
+            ));
+            const dupDateTo = new Date(Date.UTC(
+              txn.date.getUTCFullYear(), txn.date.getUTCMonth(), txn.date.getUTCDate() + 1,
+            ));
             const duplicate = await prisma.transaction.findFirst({
               where: {
                 tenant_id: tenantId,
                 credit_card_id: creditCardId,
-                date: txn.date,
+                date: { gte: dupDateFrom, lte: dupDateTo },
                 amount: new Prisma.Decimal(txn.amount_brl),
                 description,
                 deleted_at: null,
