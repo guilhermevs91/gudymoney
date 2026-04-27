@@ -1162,6 +1162,46 @@ export const creditCardsService = {
   },
 
   // -------------------------------------------------------------------------
+  // Close invoice (OPEN → CLOSED)
+  // -------------------------------------------------------------------------
+
+  async closeInvoice(
+    cardId: string,
+    invoiceId: string,
+    tenantId: string,
+    userId: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const invoice = await creditCardsRepository.findInvoiceById(invoiceId, tenantId);
+    if (invoice === null || invoice.credit_card_id !== cardId) {
+      throw new NotFoundError('Fatura não encontrada.');
+    }
+    if (invoice.status !== 'OPEN') {
+      throw new ValidationError('Apenas faturas abertas podem ser fechadas.');
+    }
+
+    const updated = await prisma.creditCardInvoice.update({
+      where: { id: invoiceId },
+      data: { status: 'CLOSED', updated_at: new Date() },
+    });
+
+    await createAuditLog({
+      prisma: prisma as unknown as PrismaClient,
+      tenantId,
+      userId,
+      entityType: 'CreditCardInvoice',
+      entityId: invoiceId,
+      action: 'UPDATE',
+      afterData: { status: 'CLOSED' },
+      ipAddress,
+      userAgent,
+    });
+
+    return { data: updated };
+  },
+
+  // -------------------------------------------------------------------------
   // Create installment purchase
   // -------------------------------------------------------------------------
 
@@ -1277,10 +1317,10 @@ export const creditCardsService = {
           tx,
         );
 
-        if (invoice.status === 'PAID') {
+        if (invoice.status === 'PAID' || invoice.status === 'CLOSED') {
           const mes = invoice.period_start.toISOString().substring(0, 7);
           throw new ValidationError(
-            `A parcela ${i}/${n} cairia em uma fatura já paga (${mes}). Estorne o pagamento desta fatura antes de continuar.`,
+            `A parcela ${i}/${n} cairia em uma fatura ${invoice.status === 'PAID' ? 'já paga' : 'fechada'} (${mes}). ${invoice.status === 'PAID' ? 'Estorne o pagamento' : 'Reabra a fatura'} antes de continuar.`,
           );
         }
 

@@ -1,6 +1,6 @@
 {
   "name": "@gudy/api",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "private": true,
   "scripts": {
     "dev": "prisma generate && ts-node-dev --respawn --transpile-only --exit-child src/index.ts",

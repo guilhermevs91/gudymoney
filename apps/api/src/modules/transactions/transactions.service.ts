@@ -291,8 +291,8 @@ export const transactionsService = {
           where: { id: resolvedInvoiceId },
           select: { status: true },
         });
-        if (inv?.status === 'PAID') {
-          throw new ValidationError('Não é possível adicionar lançamentos em uma fatura já paga.');
+        if (inv?.status === 'PAID' || inv?.status === 'CLOSED') {
+          throw new ValidationError('Não é possível adicionar lançamentos em uma fatura fechada ou já paga.');
         }
       }
 
@@ -420,8 +420,8 @@ export const transactionsService = {
         where: { id: existing.credit_card_invoice_id },
         select: { status: true },
       });
-      if (inv?.status === 'PAID') {
-        throw new ValidationError('Não é possível alterar lançamentos de uma fatura já paga. Estorne o pagamento primeiro.');
+      if (inv?.status === 'PAID' || inv?.status === 'CLOSED') {
+        throw new ValidationError('Não é possível alterar lançamentos de uma fatura fechada ou já paga.');
       }
     }
 
@@ -597,8 +597,8 @@ export const transactionsService = {
         where: { id: existing.credit_card_invoice_id },
         select: { status: true },
       });
-      if (inv?.status === 'PAID') {
-        throw new ValidationError('Não é possível excluir lançamentos de uma fatura já paga. Estorne o pagamento primeiro.');
+      if (inv?.status === 'PAID' || inv?.status === 'CLOSED') {
+        throw new ValidationError('Não é possível excluir lançamentos de uma fatura fechada ou já paga.');
       }
     }
 

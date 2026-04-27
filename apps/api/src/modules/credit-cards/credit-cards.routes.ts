@@ -142,4 +142,12 @@ router.delete(
   creditCardsController.reverseInvoicePayment,
 );
 
+// POST /credit-cards/:id/invoices/:invoiceId/close
+router.post(
+  '/:id/invoices/:invoiceId/close',
+  authenticateUser,
+  requireTenantAccess,
+  creditCardsController.closeInvoice,
+);
+
 export default router;

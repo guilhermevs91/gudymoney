@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Plus, CreditCard as CreditCardIcon, CheckCircle, Trash2, Pencil, ClipboardCheck, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, CreditCard as CreditCardIcon, CheckCircle, Trash2, Pencil, ClipboardCheck, RotateCcw, Lock } from 'lucide-react';
 import type { Account, Category, CreditCard, CreditCardInvoice, Transaction } from '@/types';
 
 interface InvoicePayment {
@@ -544,6 +544,18 @@ export default function CreditCardDetailPage() {
     }
   }
 
+  async function handleCloseInvoice() {
+    if (!selectedInvoice) return;
+    try {
+      const res = await api.post<{ data: CreditCardInvoice }>(`/credit-cards/${id}/invoices/${selectedInvoice.id}/close`, {});
+      setSelectedInvoice(res.data);
+      setInvoices((prev) => prev.map((inv) => (inv.id === res.data.id ? res.data : inv)));
+      toast({ title: 'Fatura fechada com sucesso.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Erro ao fechar fatura.', description: err instanceof Error ? err.message : undefined });
+    }
+  }
+
   async function handleDeleteInvoice() {
     if (!selectedInvoice) return;
     setDeletingInvoice(true);
@@ -769,22 +781,35 @@ export default function CreditCardDetailPage() {
                         )}
                       </p>
                     </div>
-                    {['OPEN', 'CLOSED', 'PARTIAL'].includes(selectedInvoice.status) && (
-                      <Button
-                        size="sm"
-                        className="shrink-0"
-                        onClick={() => {
-                          setPayAmount(
-                            (invoiceDisplayTotal - Number(selectedInvoice.total_paid)).toFixed(2),
-                          );
-                          setPayAccountId('');
-                          setPayDialog(true);
-                        }}
-                      >
-                        Pagar
-                      </Button>
-                    )}
+                    <div className="flex gap-2 shrink-0">
+                      {selectedInvoice.status === 'OPEN' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCloseInvoice}
+                        >
+                          <Lock className="h-4 w-4 mr-1" />
+                          Fechar Fatura
+                        </Button>
+                      )}
+                      {['OPEN', 'CLOSED', 'PARTIAL'].includes(selectedInvoice.status) && (
+                        <Button
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => {
+                            setPayAmount(
+                              (invoiceDisplayTotal - Number(selectedInvoice.total_paid)).toFixed(2),
+                            );
+                            setPayAccountId('');
+                            setPayDialog(true);
+                          }}
+                        >
+                          Pagar
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  {!['CLOSED', 'PAID'].includes(selectedInvoice.status) && (
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => { setTxDate(todayISO()); setTxDialog(true); }}>
                       <Plus className="h-4 w-4 mr-1" />
@@ -809,6 +834,7 @@ export default function CreditCardDetailPage() {
                       Conferir
                     </Button>
                   </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-3 md:p-6">

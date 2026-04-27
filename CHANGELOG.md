@@ -5,6 +5,14 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.9.3] - 2026-04-27
+
+### Adicionado
+- Cartão de crédito: botão "Fechar Fatura" — muda status de OPEN para CLOSED e bloqueia novos lançamentos, parcelamentos e exclusões até que seja reaberta ou paga
+
+### Alterado
+- API: faturas com status CLOSED agora bloqueiam criação, edição e exclusão de lançamentos (anteriormente apenas PAID bloqueava)
+
 ## [1.9.2] - 2026-04-27
 
 ### Corrigido
